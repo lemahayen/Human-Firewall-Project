@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "username": "adi",
+      "created_at": "2026-08-03T10:26:00.381Z"
+    },
+    {
+      "username": "Adi",
+      "created_at": "2026-08-03T10:29:03.661Z"
+    },
+    {
+      "username": "adarsh",
+      "created_at": "2026-08-03T12:41:34.341Z"
+    }
+  ],
+  "scores": [
+    {
+      "username": "Adi",
+      "pre_score": 2,
+      "post_score": 5,
+      "time_seconds": 156,
+      "created_at": "2026-08-03T10:31:42.877Z"
+    },
+    {
+      "username": "adarsh",
+      "pre_score": 3,
+      "post_score": 2,
+      "time_seconds": 296,
+      "created_at": "2026-08-03T12:46:38.634Z"
+    }
+  ]
+}
