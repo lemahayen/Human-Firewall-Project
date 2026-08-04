@@ -1,78 +1,106 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const initSqlJs = require('sql.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'data.json');
+const DB_FILE = path.join(__dirname, 'data.sqlite');
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---------- Tiny file-based "database" ----------
-// No native modules, no compiling, no Python required — just a JSON file
-// on disk. Good enough for a class project; swap for a real SQL database
-// later if you need one (the shape below maps directly to two tables:
-// users(username) and scores(username, pre_score, post_score, time_seconds)).
+// ---------- Real SQL database (SQLite via sql.js) ----------
+let db;
 
-function loadDB() {
-  if (!fs.existsSync(DB_FILE)) {
-    return { users: [], scores: [] };
-  }
-  try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  } catch (e) {
-    return { users: [], scores: [] };
-  }
+function persist() {
+  const data = db.export();
+  fs.writeFileSync(DB_FILE, Buffer.from(data));
 }
 
-function saveDB(db) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+function run(sql, params = []) {
+  db.run(sql, params);
+  persist();
+}
+
+function all(sql, params = []) {
+  const stmt = db.prepare(sql);
+  stmt.bind(params);
+  const rows = [];
+  while (stmt.step()) rows.push(stmt.getAsObject());
+  stmt.free();
+  return rows;
+}
+
+async function initDB() {
+  const SQL = await initSqlJs();
+
+  if (fs.existsSync(DB_FILE)) {
+    db = new SQL.Database(fs.readFileSync(DB_FILE));
+  } else {
+    db = new SQL.Database();
+  }
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS scores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL,
+      pre_score INTEGER NOT NULL,
+      post_score INTEGER NOT NULL,
+      time_seconds INTEGER NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+  persist();
 }
 
 // ---------- API ----------
 
-// Log in (or silently register) a username. No password - this is an
-// awareness-training tool, not an account system, so we just need a
-// stable name to attach scores to.
 app.post('/api/login', (req, res) => {
   const raw = (req.body && req.body.username) || '';
   const username = raw.trim().slice(0, 30);
   if (!username) return res.status(400).json({ error: 'username required' });
 
-  const db = loadDB();
-  if (!db.users.find(u => u.username === username)) {
-    db.users.push({ username, created_at: new Date().toISOString() });
-    saveDB(db);
+  const existing = all('SELECT username FROM users WHERE username = ?', [username]);
+  if (existing.length === 0) {
+    run('INSERT INTO users (username) VALUES (?)', [username]);
   }
   res.json({ username });
 });
 
-// Save one completed attempt (pre score, post score, total time in seconds)
 app.post('/api/submit', (req, res) => {
   const { username, preScore, postScore, timeSeconds } = req.body || {};
   if (!username || typeof preScore !== 'number' || typeof postScore !== 'number' || typeof timeSeconds !== 'number') {
     return res.status(400).json({ error: 'username, preScore, postScore, timeSeconds are required' });
   }
-  const db = loadDB();
-  db.scores.push({
-    username,
-    pre_score: preScore,
-    post_score: postScore,
-    time_seconds: timeSeconds,
-    created_at: new Date().toISOString()
-  });
-  saveDB(db);
+  run(
+    'INSERT INTO scores (username, pre_score, post_score, time_seconds) VALUES (?, ?, ?, ?)',
+    [username, preScore, postScore, timeSeconds]
+  );
   res.json({ ok: true });
 });
 
-// Leaderboard: best attempt per user, ranked by post-test score (desc)
-// then by fastest completion time (asc) as the tiebreaker.
+// Clear the leaderboard (deletes all score records, keeps registered usernames).
+// Protected by a simple key so randoms can't wipe it by guessing the URL.
+const RESET_KEY = 'Aditya';
+app.get('/api/reset-leaderboard', (req, res) => {
+  if (req.query.key !== RESET_KEY) {
+    return res.status(403).send('Wrong or missing key. Use ?key=YOUR_KEY in the URL.');
+  }
+  run('DELETE FROM scores', []);
+  res.send('Leaderboard cleared.');
+});
+
 app.get('/api/leaderboard', (req, res) => {
-  const db = loadDB();
+  const rows = all('SELECT username, post_score, time_seconds FROM scores');
 
   const best = {};
-  for (const r of db.scores) {
+  for (const r of rows) {
     const cur = best[r.username];
     const better =
       !cur ||
@@ -88,6 +116,13 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(leaderboard.slice(0, 50));
 });
 
-app.listen(PORT, () => {
-  console.log(`Human Firewall server running at http://localhost:${PORT}`);
-});
+initDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Human Firewall server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to initialize the database:', err);
+    process.exit(1);
+  });
