@@ -1,1 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case File: The Human Firewall — Security Awareness Escape Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161b;
+    --paper:#ede6d6;
+    --paper-edge:#cdbfa0;
+    --ink:#2a2622;
+    --ink-soft:#5a5248;
+    --amber:#e8a33d;
+    --teal:#3fa796;
+    --red:#c24c3b;
+    --gold:#d4af37;
+    --muted:#8a96a3;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% 10%, #1b232c 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, #1a2530 0%, transparent 45%),
+      var(--bg);
+    color:var(--paper);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:2rem 1rem 4rem;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+  .masthead{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid #33404d;padding-bottom:1rem;margin-bottom:1.5rem;
+    flex-wrap:wrap;gap:.5rem;
+  }
+  .masthead .case-no{font-family:var(--mono);color:var(--amber);font-size:.85rem;letter-spacing:.08em;}
+  .masthead h1{font-family:var(--mono);font-size:1.4rem;margin:.15rem 0 0;color:#f2eee4;}
+  .clearance{font-family:var(--mono);font-size:.8rem;color:var(--muted);text-align:right;}
+  .clearance b{color:var(--teal);}
+  .agent-tag{font-family:var(--mono);font-size:.75rem;color:var(--amber);}
+
+  .meter{height:8px;border-radius:4px;background:#232c35;overflow:hidden;margin-bottom:2rem;border:1px solid #333f4b;}
+  .meter-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--teal));width:0%;transition:width .5s ease;}
+
+  .tabs{display:flex;gap:.4rem;margin-bottom:-2px;flex-wrap:wrap;}
+  .tab{
+    font-family:var(--mono);font-size:.75rem;padding:.55rem .9rem;
+    background:#20272f;color:var(--muted);border:1px solid #333f4b;border-bottom:none;
+    border-radius:6px 6px 0 0;cursor:pointer;user-select:none;
+    display:flex;align-items:center;gap:.4rem;
+  }
+  .tab.active{background:var(--paper);color:var(--ink);border-color:var(--paper-edge);}
+  .tab.done{color:var(--teal);}
+  .tab.locked{cursor:not-allowed;opacity:.5;}
+
+  .panel{
+    background:var(--paper);color:var(--ink);border:1px solid var(--paper-edge);
+    border-radius:0 8px 8px 8px;padding:1.75rem;position:relative;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+  }
+  .panel::before{
+    content:"";position:absolute;top:14px;right:18px;width:26px;height:26px;
+    border-radius:50%;background:radial-gradient(circle at 35% 30%, #f2d9c4, var(--red) 70%);
+    box-shadow:0 2px 4px rgba(0,0,0,.4);
+  }
+  .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.35rem;}
+  .panel h2{font-family:var(--mono);margin:0 0 .75rem;font-size:1.25rem;}
+  .panel p{line-height:1.55;color:var(--ink);}
+
+  .btn{
+    font-family:var(--mono);font-size:.8rem;letter-spacing:.03em;
+    background:var(--ink);color:var(--paper);border:none;border-radius:5px;
+    padding:.65rem 1.1rem;cursor:pointer;margin-top:1rem;
+  }
+  .btn:hover{background:#403a30;}
+  .btn.primary{background:var(--teal);color:#0d1c19;}
+  .btn.primary:hover{background:#4fc0ac;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  input.textfield{
+    font-family:var(--sans);font-size:1rem;padding:.65rem .8rem;border:1px solid var(--paper-edge);
+    border-radius:6px;width:100%;max-width:320px;background:#fbf8f0;color:var(--ink);
+  }
+  .err{color:var(--red);font-size:.85rem;margin-top:.5rem;font-family:var(--mono);min-height:1.2em;}
+
+  .choices{display:flex;flex-direction:column;gap:.6rem;margin-top:1rem;}
+  .choice{
+    text-align:left;font-family:var(--sans);font-size:.95rem;
+    background:#fbf8f0;border:1px solid var(--paper-edge);border-radius:6px;
+    padding:.7rem .9rem;cursor:pointer;transition:.15s;
+  }
+  .choice:hover{border-color:var(--ink-soft);}
+  .choice.correct{background:#dcefe9;border-color:var(--teal);}
+  .choice.wrong{background:#f4dcd7;border-color:var(--red);}
+  .choice.disabled{pointer-events:none;}
+
+  .feedback{margin-top:.9rem;font-size:.9rem;font-weight:600;}
+  .feedback.ok{color:#237a63;}
+  .feedback.bad{color:var(--red);}
+
+  .exhibits{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:1rem;}
+  @media(max-width:640px){.exhibits{grid-template-columns:1fr;}}
+  .exhibit{background:#fbf8f0;border:1px solid var(--paper-edge);border-radius:6px;padding:.8rem;cursor:pointer;}
+  .exhibit .from{font-size:.75rem;color:var(--ink-soft);margin-bottom:.3rem;}
+  .exhibit .subj{font-weight:600;margin-bottom:.4rem;}
+  .exhibit .link{font-family:var(--mono);font-size:.8rem;color:#1a5276;text-decoration:underline;}
+  .statusbar{font-family:var(--mono);font-size:.8rem;background:#20272f;color:var(--teal);border-radius:4px;padding:.5rem .7rem;margin-top:.8rem;min-height:1.4rem;border:1px solid #333f4b;}
+
+  .pool{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem;}
+  .chip{background:#fbf8f0;border:1px solid var(--paper-edge);border-radius:16px;padding:.4rem .8rem;font-size:.85rem;cursor:pointer;}
+  .chip.selected{border-color:var(--amber);background:#fff2df;}
+  .chip.placed{opacity:.35;pointer-events:none;}
+  .bins{display:flex;gap:.8rem;margin-top:1rem;}
+  .bin{flex:1;border:2px dashed var(--paper-edge);border-radius:8px;padding:.8rem;min-height:90px;font-family:var(--mono);font-size:.8rem;}
+  .bin .label{text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:.4rem;display:block;}
+  .bin .item{background:#fff;border-radius:5px;padding:.3rem .5rem;margin:.2rem 0;font-family:var(--sans);font-size:.85rem;}
+  .bin .item.wrong{border-left:3px solid var(--red);}
+  .bin .item.right{border-left:3px solid var(--teal);}
+
+  .stamp{
+    position:absolute;top:1.4rem;right:3.2rem;font-family:var(--mono);font-weight:700;
+    color:var(--red);border:3px solid var(--red);border-radius:6px;padding:.15rem .5rem;
+    transform:rotate(-8deg);font-size:.85rem;opacity:0;transition:opacity .3s;letter-spacing:.05em;
+  }
+  .stamp.show{opacity:.85;}
+
+  .hidden{display:none !important;}
+  .center{text-align:center;}
+  .muted-note{color:var(--muted);font-size:.85rem;margin-top:1rem;font-family:var(--mono);}
+
+  .video-card iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:6px;display:block;margin-top:.75rem;}
+  .transcript{
+    background:#fbf8f0;border:1px solid var(--paper-edge);border-radius:6px;
+    padding:.9rem 1rem;margin-top:.9rem;font-size:.9rem;line-height:1.5;color:var(--ink-soft);
+  }
+  .transcript .t-label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);display:block;margin-bottom:.3rem;}
+
+  .score-grid{display:flex;gap:1rem;margin:1.2rem 0;flex-wrap:wrap;}
+  .score-card{flex:1;min-width:140px;background:#fbf8f0;border:1px solid var(--paper-edge);border-radius:8px;padding:1rem;text-align:center;}
+  .score-card .lbl{font-family:var(--mono);font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;}
+  .score-big{font-size:2rem;font-weight:700;}
+
+  table.leaderboard{width:100%;border-collapse:collapse;margin-top:1rem;font-family:var(--mono);font-size:.85rem;}
+  table.leaderboard th{text-align:left;color:var(--ink-soft);font-weight:600;border-bottom:1px solid var(--paper-edge);padding:.4rem;}
+  table.leaderboard td{padding:.45rem .4rem;border-bottom:1px solid #e2d8bf;}
+  table.leaderboard tr.me{background:#fff2df;}
+  table.leaderboard tr.top1 td:first-child{color:var(--gold);font-weight:700;}
+  table.leaderboard tr.top2 td:first-child{color:#9aa5ad;font-weight:700;}
+  table.leaderboard tr.top3 td:first-child{color:#b06a3c;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <div class="case-no">CASE FILE // CyT-AL3</div>
+      <h1>The Human Firewall</h1>
+    </div>
+    <div class="clearance">
+      CLEARANCE LEVEL<br><b id="clearanceVal">0%</b>
+      <div class="agent-tag" id="agentTag"></div>
+    </div>
+  </div>
+  <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+
+  <!-- LOGIN -->
+  <section id="view-login" class="view">
+    <div class="panel">
+      <div class="eyebrow">Field Agent Check-In</div>
+      <h2>Enter your name to open a case file.</h2>
+      <p>Your name is used only to attach your score to the leaderboard — no password needed.</p>
+      <input type="text" id="usernameInput" class="textfield" placeholder="e.g. jane.doe" maxlength="30">
+      <div class="err" id="loginErr"></div>
+      <button class="btn primary" onclick="doLogin()">Check In →</button>
+    </div>
+  </section>
+
+  <!-- VIDEO + TRANSCRIPT + QUICK CHECK (one module at a time) -->
+  <section id="view-video" class="view hidden">
+    <div class="panel">
+      <div class="eyebrow" id="videoEyebrow">Field Footage</div>
+      <h2 id="videoTitle"></h2>
+
+      <div id="videoWatchBlock">
+        <div class="video-card">
+          <iframe id="videoFrame" src="" title="briefing clip" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <div class="transcript">
+          <span class="t-label">Video Summary</span>
+          <span id="videoTranscript"></span>
+        </div>
+        <button class="btn primary" onclick="showVideoQuestions()">Continue to Quick Check →</button>
+      </div>
+
+      <div id="videoQuizBlock" class="hidden">
+        <div class="eyebrow">Quick Check · Question <span id="vqNum">1</span> of 2</div>
+        <h2 id="vqText"></h2>
+        <div class="choices" id="vqChoices"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="view-game" class="view hidden">
+    <div class="tabs" id="tabs"></div>
+    <div class="panel" style="border-radius:0 8px 8px 8px;">
+      <div class="stamp" id="stamp">SOLVED</div>
+
+      <div id="room-0" class="room">
+        <div class="eyebrow">Exhibit 1 · Password Hygiene</div>
+        <h2>Which of these vault combinations is actually strong?</h2>
+        <p>Pick the password you'd trust to protect a real account.</p>
+        <div class="choices" id="room0choices"></div>
+        <div class="feedback" id="room0fb"></div>
+      </div>
+
+      <div id="room-1" class="room hidden">
+        <div class="eyebrow">Exhibit 2 · Link Inspection</div>
+        <h2>One of these four emails is legitimate. Find it.</h2>
+        <p>Hover (or tap) each link to reveal where it really goes, shown in the forensics bar below.</p>
+        <div class="exhibits" id="exhibits"></div>
+        <div class="statusbar" id="statusbar">forensics bar: hover a link to inspect its true destination…</div>
+        <div class="feedback" id="room1fb"></div>
+      </div>
+
+      <div id="room-2" class="room hidden">
+        <div class="eyebrow">Exhibit 3 · Data Handling</div>
+        <h2>Sort each item into the correct bin.</h2>
+        <p>Tap an item, then tap the bin you think it belongs in.</p>
+        <div class="pool" id="pool"></div>
+        <div class="bins">
+          <div class="bin" data-bin="confidential"><span class="label">Confidential</span><div class="items"></div></div>
+          <div class="bin" data-bin="public"><span class="label">Public</span><div class="items"></div></div>
+        </div>
+        <div class="feedback" id="room2fb"></div>
+      </div>
+
+      <div id="room-3" class="room hidden">
+        <div class="eyebrow">Exhibit 4 · Physical Security</div>
+        <h2>Scenario: someone in a courier uniform, arms full of boxes, is right behind you at the badge-in door.</h2>
+        <p>What's the security-conscious move?</p>
+        <div class="choices" id="room3choices"></div>
+        <div class="feedback" id="room3fb"></div>
+      </div>
+
+      <div id="roomComplete" class="center hidden" style="margin-top:1.5rem;">
+        <button class="btn primary" id="nextRoomBtn" onclick="nextRoom()">Next Exhibit →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL QUIZ -->
+  <section id="view-posttest" class="view hidden">
+    <div class="panel">
+      <div class="eyebrow">Closing Assessment · Question <span id="postQNum">1</span> of 5</div>
+      <h2 id="postQText"></h2>
+      <div class="choices" id="postChoices"></div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="view-results" class="view hidden">
+    <div class="panel">
+      <div class="eyebrow">Case Closed</div>
+      <h2>Nice work, Agent.</h2>
+      <div class="score-grid">
+        <div class="score-card"><div class="lbl">Final Score</div><div class="score-big" id="postScoreOut">0/5</div></div>
+        <div class="score-card"><div class="lbl">Time</div><div class="score-big" id="timeOut">0:00</div></div>
+      </div>
+
+      <div class="eyebrow" style="margin-top:1.5rem;">Leaderboard</div>
+      <h2 style="font-size:1.05rem;">Ranked by score, then speed</h2>
+      <table class="leaderboard">
+        <thead><tr><th>#</th><th>Agent</th><th>Score</th><th>Time</th></tr></thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+      <div class="muted-note" id="rankNote"></div>
+
+      <button class="btn" onclick="restart()">Run Again</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ---------- Video modules: video + summary + 2 questions each ---------- */
+const videoModules = [
+  {
+    title:"Passwords",
+    youtubeId:"gJdylzi6lHw",
+    transcript:"Short letter-for-number substitutions like swapping 'a' for '@' are easy for modern cracking tools to guess. Length matters more than cleverness — a long string of unrelated words is far stronger. Never reuse the same password across multiple accounts.",
+    questions:[
+      {q:"What matters most for password strength?", options:["Length and randomness","Adding a capital letter at the start","Using your pet's name","Changing one digit each time"], correct:0,
+       why:"Length and true randomness are what actually slow down cracking tools."},
+      {q:"Which of these is safest to reuse across multiple accounts?", options:["None — never reuse passwords","Your email password","A password with your birth year","Any password over 8 characters"], correct:0,
+       why:"Reusing any password means one leaked account compromises every account sharing it."}
+    ]
+  },
+  {
+    title:"Spear Phishing",
+    youtubeId:"Kqj3f5uAgKE",
+    transcript:"Spear phishing emails are personalized using real details about you or your role, which makes them far more convincing than generic spam. Warning signs include sender domains that don't quite match and links whose real destination differs from the text shown. Always verify before clicking or replying.",
+    questions:[
+      {q:"Spear phishing emails are dangerous because they:", options:["Are sent to everyone at once","Are personalized using details about you specifically","Always contain obvious spelling mistakes","Only target executives"], correct:1,
+       why:"Personalization is what makes spear phishing far more convincing than generic spam."},
+      {q:"Before clicking a link in an unexpected email, you should:", options:["Hover over it to check the real destination","Trust it if the logo looks right","Click quickly before it expires","Forward it to see if others got it too"], correct:0,
+       why:"Hovering reveals the true destination before you commit to clicking."}
+    ]
+  },
+  {
+    title:"Tailgating",
+    youtubeId:"Q-Id0YfCXyA",
+    transcript:"Tailgating is when someone follows an authorized employee through a secure door without badging in themselves — often relying on politeness or a convincing uniform to avoid suspicion. The correct response is to verify a stranger's access every time, even when it feels socially awkward.",
+    questions:[
+      {q:"Tailgating is when:", options:["Someone follows you through a secure door without badging in","You're stuck in traffic on the way to work","Someone drives too closely behind you","An employee works overtime"], correct:0,
+       why:"That's the exact definition — following through a secure door without independent access verification."},
+      {q:"The safest response to a stranger tailgating you into a secure area is:", options:["Politely ask them to badge in separately","Assume they work there","Let it go, confrontation feels rude","Hold the door since their hands are full"], correct:0,
+       why:"Verifying access, even awkwardly, is the correct control — no exceptions for a busy-looking stranger."}
+    ]
+  }
+];
+
+/* ---------- Escape room data ---------- */
+const passwordOptions = [
+  {text:"Password123!", ok:false, why:"Predictable pattern + common word. Cracked in seconds."},
+  {text:"Tr0ub4dor&3", ok:false, why:"Classic letter-for-number substitution — attackers' tools check for this first."},
+  {text:"correct-horse-battery-staple-2024!", ok:true, why:"Long, random, unrelated words. Length is the strongest defense."},
+  {text:"Summer2024", ok:false, why:"Seasonal passwords are one of the first things password-spray attacks try."}
+];
+
+const exhibitsData = [
+  {from:"payroll@yourcompany.com", subj:"W-2 correction needed", linkText:"yourcompany.com/hr/w2-correction",
+   href:"http://yourcompany-hr-secure.ru/login", ok:false, why:"Display text doesn't match the real domain — a .ru login page, not your company."},
+  {from:"it-helpdesk@yourcompany.com", subj:"Password expiring today", linkText:"yourcompany.com/reset",
+   href:"https://yourcompany.com/reset", ok:true, why:"Display text and real destination match your actual company domain."},
+  {from:"security-alert@yourcompany-verify.com", subj:"Unusual sign-in detected", linkText:"yourcompany.com/security",
+   href:"https://bit.ly/3xJk92q", ok:false, why:"A shortened link hides the real destination — never trust it on a security alert."},
+  {from:"ceo.office@yourcompany.co", subj:"Urgent wire transfer approval", linkText:"yourcompany.com/approve",
+   href:"http://yourcompany.co-approvals.info/approve", ok:false, why:"Lookalike domain (.co instead of .com) plus urgency — classic CEO fraud pattern."}
+];
+
+const dataItems = [
+  {name:"Q3 public press release", bin:"public"},
+  {name:"Employee salary spreadsheet", bin:"confidential"},
+  {name:"Marketing flyer PDF", bin:"public"},
+  {name:"Customer SSNs export", bin:"confidential"},
+  {name:"Internal source code repo", bin:"confidential"},
+  {name:"Office party photos", bin:"public"}
+];
+
+const tailgateOptions = [
+  {text:"Hold the door open — it's polite", ok:false, why:"This is exactly the 'likability' trigger attackers count on."},
+  {text:"Ask them to badge in themselves, or verify with reception", ok:true, why:"Verifying identity, even awkwardly, is the correct control — no exceptions for a busy-looking stranger."},
+  {text:"Ignore them and keep walking", ok:false, why:"Better than holding the door, but doesn't actually stop the tailgate — the door is still open behind you."},
+  {text:"Let them in, they look legitimate", ok:false, why:"A uniform and a confident manner are the easiest things to fake."}
+];
+
+/* ---------- Final closing quiz (different wording from the video quick-checks) ---------- */
+const finalQuiz = [
+  {q:"Which password below would take an attacker the longest to crack?",
+   options:["Four random unrelated words strung together","A common word with a number appended","Your dog's name capitalized","An 8-character password with one symbol"],
+   correct:0, why:"Length and randomness beat short 'clever' substitutions."},
+  {q:"You get a convincing email claiming your account will be suspended in 1 hour. What's really going on?",
+   options:["The company is protecting you urgently","Urgency is a classic manipulation tactic — verify independently","You should reply immediately with your password to confirm","It's safe if the email has the company logo"],
+   correct:1, why:"Urgency short-circuits careful thinking — that's exactly why attackers use it."},
+  {q:"A spreadsheet of employee salaries lands in your inbox by mistake. What's the correct handling?",
+   options:["Treat it as confidential and report it, don't forward it","Forward it to HR so they know","Delete it immediately without telling anyone","Share it only with close colleagues"],
+   correct:0, why:"Salary data is sensitive — report it through the right channel instead of forwarding or hiding it."},
+  {q:"Someone you don't recognize, arms full of boxes, asks you to hold the secure door open. Best move?",
+   options:["Ask them to badge in themselves or verify at reception","Hold the door, refusing feels awkward","Let them in since they're clearly a courier","Only let them in if they say please"],
+   correct:0, why:"A uniform and full hands are exactly what tailgating relies on to avoid suspicion."},
+  {q:"What's the fastest way to check if a link in an email is legitimate?",
+   options:["Hover over it to see the real destination URL","Click it in a private browser window","Check if the email has a signature block","Ask a coworker if they got the same email"],
+   correct:0, why:"Hovering shows the true destination before you commit to clicking anything."}
+];
+
+/* ---------- State ---------- */
+let state = {
+  username:null,
+  startTime:null,
+  videoIdx:0, videoQIdx:0, videoScore:0,
+  postIdx:0, postScore:0,
+  currentRoom:0, roomsDone:[false,false,false,false],
+  sortSelected:null, sortPlaced:0
+};
+
+/* ---------- Login ---------- */
+async function doLogin(){
+  const input = document.getElementById('usernameInput');
+  const err = document.getElementById('loginErr');
+  const name = input.value.trim();
+  if(!name){ err.textContent = 'Enter a name to continue.'; return; }
+  err.textContent = '';
+  try{
+    const res = await fetch('/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:name})
+    });
+    if(!res.ok) throw new Error('login failed');
+    const data = await res.json();
+    state.username = data.username;
+    document.getElementById('agentTag').textContent = 'AGENT: ' + state.username;
+    state.videoIdx = 0; state.videoQIdx = 0; state.videoScore = 0;
+    goTo('video');
+  }catch(e){
+    err.textContent = 'Could not reach the server — is server.js running?';
+  }
+}
+
+/* ---------- Navigation ---------- */
+function goTo(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  document.getElementById('view-'+view).classList.remove('hidden');
+  if(view==='video') renderVideoModule(state.videoIdx);
+  if(view==='posttest') renderQuestion();
+  if(view==='game') { renderTabs(); renderRoom(); }
+  updateMeter();
+}
+
+function updateMeter(){
+  let pct = 0;
+  if(!document.getElementById('view-video').classList.contains('hidden')){
+    pct = 8 + state.videoIdx*20 + state.videoQIdx*7;
+  } else if(!document.getElementById('view-game').classList.contains('hidden')){
+    pct = 65 + (state.roomsDone.filter(x=>x).length*6);
+  } else if(!document.getElementById('view-posttest').classList.contains('hidden')){
+    pct = 90 + state.postIdx*2;
+  } else if(!document.getElementById('view-results').classList.contains('hidden')){
+    pct = 100;
+  }
+  document.getElementById('meterFill').style.width = pct+'%';
+  document.getElementById('clearanceVal').textContent = pct+'%';
+}
+
+/* ---------- Video module flow ---------- */
+function renderVideoModule(idx){
+  const m = videoModules[idx];
+  document.getElementById('videoEyebrow').textContent = `Field Footage ${idx+1} of ${videoModules.length}`;
+  document.getElementById('videoTitle').textContent = m.title;
+  document.getElementById('videoFrame').src = `https://www.youtube.com/embed/${m.youtubeId}`;
+  document.getElementById('videoTranscript').textContent = m.transcript;
+  document.getElementById('videoQuizBlock').classList.add('hidden');
+  document.getElementById('videoWatchBlock').classList.remove('hidden');
+}
+
+function showVideoQuestions(){
+  document.getElementById('videoWatchBlock').classList.add('hidden');
+  document.getElementById('videoQuizBlock').classList.remove('hidden');
+  state.videoQIdx = 0;
+  renderVideoQuestion();
+  updateMeter();
+}
+
+function renderVideoQuestion(){
+  const m = videoModules[state.videoIdx];
+  const q = m.questions[state.videoQIdx];
+  document.getElementById('vqNum').textContent = state.videoQIdx+1;
+  document.getElementById('vqText').textContent = q.q;
+  const box = document.getElementById('vqChoices');
+  box.innerHTML = '';
+  q.options.forEach((opt,i)=>{
+    const d = document.createElement('div');
+    d.className = 'choice';
+    d.textContent = opt;
+    d.onclick = ()=> answerVideoQuestion(i,d,q);
+    box.appendChild(d);
+  });
+}
+
+function answerVideoQuestion(choiceIdx, el, q){
+  const box = el.parentElement;
+  [...box.children].forEach(c=>c.classList.add('disabled'));
+  if(choiceIdx === q.correct){
+    el.classList.add('correct');
+    state.videoScore++;
+  } else {
+    el.classList.add('wrong');
+    box.children[q.correct].classList.add('correct');
+  }
+  setTimeout(()=>{
+    state.videoQIdx++;
+    if(state.videoQIdx < videoModules[state.videoIdx].questions.length){
+      renderVideoQuestion();
+    } else {
+      state.videoIdx++;
+      if(state.videoIdx < videoModules.length){
+        renderVideoModule(state.videoIdx);
+      } else {
+        state.startTime = Date.now();
+        goTo('game');
+      }
+    }
+    updateMeter();
+  }, 900);
+}
+
+/* ---------- Final quiz ---------- */
+function renderQuestion(){
+  const q = finalQuiz[state.postIdx];
+  document.getElementById('postQNum').textContent = state.postIdx+1;
+  document.getElementById('postQText').textContent = q.q;
+  const box = document.getElementById('postChoices');
+  box.innerHTML = '';
+  q.options.forEach((opt,i)=>{
+    const d = document.createElement('div');
+    d.className = 'choice';
+    d.textContent = opt;
+    d.onclick = ()=> answerFinalQuestion(i,d);
+    box.appendChild(d);
+  });
+}
+
+function answerFinalQuestion(choiceIdx, el){
+  const q = finalQuiz[state.postIdx];
+  const box = el.parentElement;
+  [...box.children].forEach(c=>c.classList.add('disabled'));
+  if(choiceIdx === q.correct){
+    el.classList.add('correct');
+    state.postScore++;
+  } else {
+    el.classList.add('wrong');
+    box.children[q.correct].classList.add('correct');
+  }
+  setTimeout(()=>{
+    state.postIdx++;
+    if(state.postIdx < finalQuiz.length) renderQuestion();
+    else finishAndSubmit();
+    updateMeter();
+  }, 900);
+}
+
+/* ---------- Game tabs ---------- */
+const roomNames = ["Passwords","Links","Data","Tailgating"];
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  roomNames.forEach((name,i)=>{
+    const t = document.createElement('div');
+    let cls = 'tab';
+    if(i === state.currentRoom) cls += ' active';
+    if(state.roomsDone[i]) cls += ' done';
+    if(i > state.currentRoom && !state.roomsDone[i]) cls += ' locked';
+    t.className = cls;
+    t.textContent = (state.roomsDone[i] ? '✓ ' : (i+1)+'. ') + name;
+    if(i <= state.currentRoom || state.roomsDone[i]){
+      t.onclick = ()=>{ state.currentRoom = i; renderTabs(); renderRoom(); };
+    }
+    tabs.appendChild(t);
+  });
+}
+
+function renderRoom(){
+  document.querySelectorAll('.room').forEach(r=>r.classList.add('hidden'));
+  document.getElementById('room-'+state.currentRoom).classList.remove('hidden');
+  document.getElementById('roomComplete').classList.add('hidden');
+  document.getElementById('stamp').classList.remove('show');
+  if(state.currentRoom===0) initRoom0();
+  if(state.currentRoom===1) initRoom1();
+  if(state.currentRoom===2) initRoom2();
+  if(state.currentRoom===3) initRoom3();
+  updateMeter();
+}
+
+function markRoomDone(){
+  state.roomsDone[state.currentRoom] = true;
+  document.getElementById('stamp').classList.add('show');
+  document.getElementById('roomComplete').classList.remove('hidden');
+  renderTabs();
+  updateMeter();
+}
+
+function nextRoom(){
+  if(state.currentRoom < 3){
+    state.currentRoom++;
+    renderTabs();
+    renderRoom();
+  } else {
+    goTo('posttest');
+  }
+}
+
+/* Room 0: passwords */
+function initRoom0(){
+  const box = document.getElementById('room0choices');
+  const fb = document.getElementById('room0fb');
+  fb.textContent = '';
+  box.innerHTML = '';
+  passwordOptions.forEach(opt=>{
+    const d = document.createElement('div');
+    d.className = 'choice';
+    d.textContent = opt.text;
+    d.onclick = ()=>{
+      if(opt.ok){
+        d.classList.add('correct');
+        fb.textContent = '✔ Correct — ' + opt.why;
+        fb.className = 'feedback ok';
+        [...box.children].forEach(c=>c.classList.add('disabled'));
+        markRoomDone();
+      } else {
+        d.classList.add('wrong');
+        fb.textContent = '✘ ' + opt.why;
+        fb.className = 'feedback bad';
+      }
+    };
+    box.appendChild(d);
+  });
+}
+
+/* Room 1: phishing links */
+function initRoom1(){
+  const box = document.getElementById('exhibits');
+  const fb = document.getElementById('room1fb');
+  const status = document.getElementById('statusbar');
+  fb.textContent = '';
+  status.textContent = 'forensics bar: hover a link to inspect its true destination…';
+  box.innerHTML = '';
+  exhibitsData.forEach(ex=>{
+    const d = document.createElement('div');
+    d.className = 'exhibit';
+    d.innerHTML = `<div class="from">From: ${ex.from}</div><div class="subj">${ex.subj}</div><span class="link">${ex.linkText}</span>`;
+    const linkEl = d.querySelector('.link');
+    const reveal = ()=> status.textContent = 'destination → ' + ex.href;
+    linkEl.addEventListener('mouseenter', reveal);
+    linkEl.addEventListener('touchstart', reveal);
+    d.onclick = ()=>{
+      if(ex.ok){
+        d.style.borderColor = 'var(--teal)';
+        fb.textContent = '✔ Correct — ' + ex.why;
+        fb.className = 'feedback ok';
+        box.querySelectorAll('.exhibit').forEach(e=>e.style.pointerEvents='none');
+        markRoomDone();
+      } else {
+        d.style.borderColor = 'var(--red)';
+        fb.textContent = '✘ ' + ex.why;
+        fb.className = 'feedback bad';
+      }
+    };
+    box.appendChild(d);
+  });
+}
+
+/* Room 2: data sort */
+function initRoom2(){
+  state.sortSelected = null;
+  state.sortPlaced = 0;
+  const pool = document.getElementById('pool');
+  const fb = document.getElementById('room2fb');
+  fb.textContent = '';
+  pool.innerHTML = '';
+  document.querySelectorAll('.bin .items').forEach(b=>b.innerHTML='');
+  document.querySelectorAll('.bin').forEach(b=>{
+    b.onclick = ()=> handleBinClick(b.dataset.bin);
+  });
+  dataItems.forEach((item,i)=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = item.name;
+    chip.dataset.idx = i;
+    chip.onclick = ()=>{
+      pool.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+      state.sortSelected = i;
+    };
+    pool.appendChild(chip);
+  });
+}
+
+function handleBinClick(binName){
+  if(state.sortSelected === null) return;
+  const idx = state.sortSelected;
+  const item = dataItems[idx];
+  const pool = document.getElementById('pool');
+  const chip = pool.querySelector(`.chip[data-idx="${idx}"]`);
+  const bin = document.querySelector(`.bin[data-bin="${binName}"] .items`);
+  const row = document.createElement('div');
+  row.className = 'item ' + (item.bin === binName ? 'right' : 'wrong');
+  row.textContent = item.name + (item.bin === binName ? ' ✔' : ' ✘ (should be ' + item.bin + ')');
+  bin.appendChild(row);
+  chip.classList.add('placed');
+  state.sortSelected = null;
+  state.sortPlaced++;
+  if(state.sortPlaced === dataItems.length){
+    const fb = document.getElementById('room2fb');
+    const correctCount = document.querySelectorAll('.bin .item.right').length;
+    fb.textContent = `Sorted ${correctCount}/${dataItems.length} correctly.`;
+    fb.className = 'feedback ' + (correctCount === dataItems.length ? 'ok' : 'bad');
+    markRoomDone();
+  }
+}
+
+/* Room 3: tailgating */
+function initRoom3(){
+  const box = document.getElementById('room3choices');
+  const fb = document.getElementById('room3fb');
+  fb.textContent = '';
+  box.innerHTML = '';
+  tailgateOptions.forEach(opt=>{
+    const d = document.createElement('div');
+    d.className = 'choice';
+    d.textContent = opt.text;
+    d.onclick = ()=>{
+      if(opt.ok){
+        d.classList.add('correct');
+        fb.textContent = '✔ Correct — ' + opt.why;
+        fb.className = 'feedback ok';
+        [...box.children].forEach(c=>c.classList.add('disabled'));
+        markRoomDone();
+      } else {
+        d.classList.add('wrong');
+        fb.textContent = '✘ ' + opt.why;
+        fb.className = 'feedback bad';
+      }
+    };
+    box.appendChild(d);
+  });
+}
+
+/* ---------- Finish, submit, leaderboard ---------- */
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ':' + String(s).padStart(2,'0');
+}
+
+async function finishAndSubmit(){
+  const timeSeconds = Math.max(1, Math.round((Date.now() - state.startTime)/1000));
+  goTo('results');
+
+  document.getElementById('postScoreOut').textContent = state.postScore + '/' + finalQuiz.length;
+  document.getElementById('timeOut').textContent = fmtTime(timeSeconds);
+
+  try{
+    await fetch('/api/submit', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username: state.username, preScore: state.videoScore, postScore: state.postScore, timeSeconds})
+    });
+  }catch(e){ /* server unreachable — still show local results */ }
+
+  try{
+    const res = await fetch('/api/leaderboard');
+    const board = await res.json();
+    renderLeaderboard(board);
+  }catch(e){
+    document.getElementById('rankNote').textContent = 'Leaderboard unavailable — check that server.js is running.';
+  }
+}
+
+function renderLeaderboard(board){
+  const body = document.getElementById('leaderboardBody');
+  body.innerHTML = '';
+  board.forEach((row,i)=>{
+    const tr = document.createElement('tr');
+    const rank = i+1;
+    if(rank===1) tr.classList.add('top1');
+    if(rank===2) tr.classList.add('top2');
+    if(rank===3) tr.classList.add('top3');
+    if(row.username === state.username) tr.classList.add('me');
+    tr.innerHTML = `<td>${rank}</td><td>${row.username}</td><td>${row.post_score}/${finalQuiz.length}</td><td>${fmtTime(row.time_seconds)}</td>`;
+    body.appendChild(tr);
+  });
+  const myRank = board.findIndex(r=>r.username===state.username) + 1;
+  const note = document.getElementById('rankNote');
+  note.textContent = myRank > 0
+    ? `You're ranked #${myRank} of ${board.length}.`
+    : `Showing top ${board.length} agents.`;
+}
+
+function restart(){
+  state = {
+    username:null, startTime:null,
+    videoIdx:0, videoQIdx:0, videoScore:0,
+    postIdx:0, postScore:0,
+    currentRoom:0, roomsDone:[false,false,false,false],
+    sortSelected:null, sortPlaced:0
+  };
+  document.getElementById('usernameInput').value = '';
+  document.getElementById('agentTag').textContent = '';
+  goTo('login');
+}
+
+goTo('login');
+</script>
+</body>
+</html>
 
