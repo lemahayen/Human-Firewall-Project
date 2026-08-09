@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard — The Human Firewall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161b;
+    --paper:#ede6d6;
+    --paper-edge:#cdbfa0;
+    --ink:#2a2622;
+    --ink-soft:#5a5248;
+    --amber:#e8a33d;
+    --teal:#3fa796;
+    --gold:#d4af37;
+    --muted:#8a96a3;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% 10%, #1b232c 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, #1a2530 0%, transparent 45%),
+      var(--bg);
+    color:var(--paper);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:2rem 1rem 4rem;
+  }
+  .wrap{max-width:700px;margin:0 auto;}
+  .masthead{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid #33404d;padding-bottom:1rem;margin-bottom:1.5rem;
+    flex-wrap:wrap;gap:.5rem;
+  }
+  .masthead .case-no{font-family:var(--mono);color:var(--amber);font-size:.85rem;letter-spacing:.08em;}
+  .masthead h1{font-family:var(--mono);font-size:1.4rem;margin:.15rem 0 0;color:#f2eee4;}
+  .backlink{font-family:var(--mono);font-size:.8rem;color:var(--teal);text-decoration:none;}
+  .backlink:hover{text-decoration:underline;}
+
+  .panel{
+    background:var(--paper);color:var(--ink);border:1px solid var(--paper-edge);
+    border-radius:8px;padding:1.75rem;position:relative;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+  }
+  .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.35rem;}
+  .panel h2{font-family:var(--mono);margin:0 0 .5rem;font-size:1.15rem;}
+  .muted-note{color:var(--ink-soft);font-size:.85rem;margin-top:1rem;font-family:var(--mono);}
+
+  table.leaderboard{width:100%;border-collapse:collapse;margin-top:1rem;font-family:var(--mono);font-size:.9rem;}
+  table.leaderboard th{text-align:left;color:var(--ink-soft);font-weight:600;border-bottom:1px solid var(--paper-edge);padding:.5rem;}
+  table.leaderboard td{padding:.55rem .5rem;border-bottom:1px solid #e2d8bf;}
+  table.leaderboard tr.top1 td:first-child{color:var(--gold);font-weight:700;}
+  table.leaderboard tr.top2 td:first-child{color:#9aa5ad;font-weight:700;}
+  table.leaderboard tr.top3 td:first-child{color:#b06a3c;font-weight:700;}
+  .empty{font-family:var(--sans);color:var(--ink-soft);padding:1rem 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="case-no">CASE FILE // CyT-AL3</div>
+      <h1>Leaderboard</h1>
+    </div>
+    <a class="backlink" href="/">← Play the Escape Room</a>
+  </div>
+
+  <div class="panel">
+    <div class="eyebrow">Top Agents</div>
+    <h2>Ranked by score, then speed</h2>
+    <table class="leaderboard">
+      <thead><tr><th>#</th><th>Agent</th><th>Score</th><th>Time</th></tr></thead>
+      <tbody id="leaderboardBody"></tbody>
+    </table>
+    <div class="empty hidden" id="emptyMsg">No scores recorded yet — be the first to play.</div>
+    <div class="muted-note">Refreshes automatically every 10 seconds.</div>
+  </div>
+</div>
+
+<script>
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ':' + String(s).padStart(2,'0');
+}
+
+async function loadLeaderboard(){
+  try{
+    const res = await fetch('/api/leaderboard');
+    const board = await res.json();
+    const body = document.getElementById('leaderboardBody');
+    const empty = document.getElementById('emptyMsg');
+    body.innerHTML = '';
+    if(board.length === 0){
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    board.forEach((row,i)=>{
+      const tr = document.createElement('tr');
+      const rank = i+1;
+      if(rank===1) tr.classList.add('top1');
+      if(rank===2) tr.classList.add('top2');
+      if(rank===3) tr.classList.add('top3');
+      tr.innerHTML = `<td>${rank}</td><td>${row.username}</td><td>${row.post_score}/5</td><td>${fmtTime(row.time_seconds)}</td>`;
+      body.appendChild(tr);
+    });
+  }catch(e){
+    document.getElementById('leaderboardBody').innerHTML = '';
+    const empty = document.getElementById('emptyMsg');
+    empty.textContent = 'Could not load the leaderboard — check the server is running.';
+    empty.style.display = 'block';
+  }
+}
+
+loadLeaderboard();
+setInterval(loadLeaderboard, 10000);
+</script>
+</body>
+</html>
