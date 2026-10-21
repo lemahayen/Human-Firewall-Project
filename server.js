@@ -1,128 +1,179 @@
+
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const initSqlJs = require('sql.js');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'data.sqlite');
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// ---------- Real SQL database (SQLite via sql.js) ----------
-let db;
-
-function persist() {
-  const data = db.export();
-  fs.writeFileSync(DB_FILE, Buffer.from(data));
+// ---------- Neon PostgreSQL database ----------
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL is missing from environment variables.');
+  process.exit(1);
 }
 
-function run(sql, params = []) {
-  db.run(sql, params);
-  persist();
-}
-
-function all(sql, params = []) {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  const rows = [];
-  while (stmt.step()) rows.push(stmt.getAsObject());
-  stmt.free();
-  return rows;
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 async function initDB() {
-  const SQL = await initSqlJs();
-
-  if (fs.existsSync(DB_FILE)) {
-    db = new SQL.Database(fs.readFileSync(DB_FILE));
-  } else {
-    db = new SQL.Database();
-  }
-
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(30) UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
     CREATE TABLE IF NOT EXISTS scores (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL,
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(30) NOT NULL,
       pre_score INTEGER NOT NULL,
       post_score INTEGER NOT NULL,
       time_seconds INTEGER NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  persist();
+
+  console.log('Neon PostgreSQL database connected and tables checked.');
 }
 
 // ---------- API ----------
 
-app.post('/api/login', (req, res) => {
-  const raw = (req.body && req.body.username) || '';
-  const username = raw.trim().slice(0, 30);
-  if (!username) return res.status(400).json({ error: 'username required' });
+app.post('/api/login', async (req, res) => {
+  try {
+    const raw = (req.body && req.body.username) || '';
+    const username = raw.trim().slice(0, 30);
 
-  const existing = all('SELECT username FROM users WHERE username = ?', [username]);
-  if (existing.length === 0) {
-    run('INSERT INTO users (username) VALUES (?)', [username]);
+    if (!username) {
+      return res.status(400).json({ error: 'username required' });
+    }
+
+    await pool.query(
+      'INSERT INTO users (username) VALUES ($1) ON CONFLICT (username) DO NOTHING',
+      [username]
+    );
+
+    res.json({ username });
+  } catch (err) {
+    console.error('Login database error:', err);
+    res.status(500).json({ error: 'Unable to process login' });
   }
-  res.json({ username });
 });
 
-app.post('/api/submit', (req, res) => {
-  const { username, preScore, postScore, timeSeconds } = req.body || {};
-  if (!username || typeof preScore !== 'number' || typeof postScore !== 'number' || typeof timeSeconds !== 'number') {
-    return res.status(400).json({ error: 'username, preScore, postScore, timeSeconds are required' });
+app.post('/api/submit', async (req, res) => {
+  try {
+    const { username, preScore, postScore, timeSeconds } = req.body || {};
+
+    if (
+      typeof username !== 'string' ||
+      !username.trim() ||
+      username.trim().length > 30 ||
+      !Number.isInteger(preScore) ||
+      !Number.isInteger(postScore) ||
+      !Number.isInteger(timeSeconds) ||
+      preScore < 0 ||
+      postScore < 0 ||
+      timeSeconds < 0
+    ) {
+      return res.status(400).json({
+        error: 'A valid username, preScore, postScore and timeSeconds are required'
+      });
+    }
+
+    const cleanUsername = username.trim();
+
+    const user = await pool.query(
+      'SELECT username FROM users WHERE username = $1',
+      [cleanUsername]
+    );
+
+    if (user.rowCount === 0) {
+      return res.status(400).json({ error: 'Please log in before submitting a score' });
+    }
+
+    await pool.query(
+      `INSERT INTO scores (username, pre_score, post_score, time_seconds)
+       VALUES ($1, $2, $3, $4)`,
+      [cleanUsername, preScore, postScore, timeSeconds]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Score submission error:', err);
+    res.status(500).json({ error: 'Unable to save score' });
   }
-  run(
-    'INSERT INTO scores (username, pre_score, post_score, time_seconds) VALUES (?, ?, ?, ?)',
-    [username, preScore, postScore, timeSeconds]
-  );
-  res.json({ ok: true });
 });
 
-// Clear the leaderboard (deletes all score records, keeps registered usernames).
-// Protected by a simple key so randoms can't wipe it by guessing the URL.
-const RESET_KEY = 'Aditya';
-app.get('/api/reset-leaderboard', (req, res) => {
-  if (req.query.key !== RESET_KEY) {
-    return res.status(403).send('Wrong or missing key. Use ?key=YOUR_KEY in the URL.');
-  }
-  run('DELETE FROM scores', []);
-  res.send('Leaderboard cleared.');
-});
+// Clear leaderboard using a secret stored in Render Environment.
+// Set RESET_KEY in Render before using this endpoint.
+app.get('/api/reset-leaderboard', async (req, res) => {
+  const resetKey = process.env.RESET_KEY;
 
-app.get('/api/leaderboard', (req, res) => {
-  const rows = all('SELECT username, post_score, time_seconds FROM scores');
-
-  const best = {};
-  for (const r of rows) {
-    const cur = best[r.username];
-    const better =
-      !cur ||
-      r.post_score > cur.post_score ||
-      (r.post_score === cur.post_score && r.time_seconds < cur.time_seconds);
-    if (better) best[r.username] = r;
+  if (!resetKey || req.query.key !== resetKey) {
+    return res.status(403).send('Wrong or missing key.');
   }
 
-  const leaderboard = Object.values(best).sort(
-    (a, b) => b.post_score - a.post_score || a.time_seconds - b.time_seconds
-  );
-
-  res.json(leaderboard.slice(0, 50));
+  try {
+    await pool.query('DELETE FROM scores');
+    res.send('Leaderboard cleared.');
+  } catch (err) {
+    console.error('Leaderboard reset error:', err);
+    res.status(500).send('Unable to clear leaderboard.');
+  }
 });
 
-initDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Human Firewall server running at http://localhost:${PORT}`);
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT username, post_score, time_seconds
+      FROM (
+        SELECT
+          username,
+          post_score,
+          time_seconds,
+          ROW_NUMBER() OVER (
+            PARTITION BY username
+            ORDER BY post_score DESC, time_seconds ASC, created_at ASC
+          ) AS position
+        FROM scores
+      ) ranked
+      WHERE position = 1
+      ORDER BY post_score DESC, time_seconds ASC
+      LIMIT 50
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Leaderboard database error:', err);
+    res.status(500).json({ error: 'Unable to load leaderboard' });
+  }
+});
+
+// Health check for verifying deployment and database connectivity.
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ ok: true, database: 'connected' });
+  } catch (err) {
+    console.error('Database health check failed:', err);
+    res.status(503).json({ ok: false, database: 'disconnected' });
+  }
+});
+
+async function startServer() {
+  try {
+    await initDB();
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Human Firewall server running on port ${PORT}`);
     });
-  })
-  .catch(err => {
-    console.error('Failed to initialize the database:', err);
+  } catch (err) {
+    console.error('Failed to initialize Neon database:', err);
     process.exit(1);
-  });
+  }
+}
+
+startServer();
