@@ -6,33 +6,374 @@
 <title>The Human Firewall — Cyber Defence Mission</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-:root{--bg:#12161b;--paper:#ede6d6;--edge:#cdbfa0;--ink:#2a2622;--soft:#5a5248;--amber:#e8a33d;--teal:#3fa796;--red:#c24c3b;--muted:#8a96a3;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
-*{box-sizing:border-box}html,body{margin:0;padding:0}body{background:radial-gradient(circle at 20% 10%,#1b232c 0%,transparent 40%),radial-gradient(circle at 90% 80%,#1a2530 0%,transparent 45%),var(--bg);color:var(--paper);font-family:var(--sans);min-height:100vh;padding:2rem 1rem 4rem}.wrap{max-width:900px;margin:auto}
-.masthead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #33404d;padding-bottom:1rem;margin-bottom:1.5rem;flex-wrap:wrap;gap:.5rem}.case-no,.clearance,.agent-tag,.eyebrow,.meter-label{font-family:var(--mono)}.case-no{color:var(--amber);font-size:.85rem;letter-spacing:.08em}.masthead h1{font-family:var(--mono);font-size:1.4rem;margin:.15rem 0 0;color:#f2eee4}.clearance{text-align:right;font-size:.8rem;color:var(--muted)}.clearance b{color:var(--teal)}.agent-tag{font-size:.75rem;color:var(--amber)}
-.meter{height:8px;border-radius:4px;background:#232c35;overflow:hidden;margin-bottom:2rem;border:1px solid #333f4b}.meter-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--teal));width:0%;transition:width .3s}
-.panel{background:var(--paper);color:var(--ink);border:1px solid var(--edge);border-radius:8px;padding:1.75rem;position:relative;box-shadow:0 12px 30px #0005}.panel:before{content:"";position:absolute;top:14px;right:18px;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f2d9c4,var(--red) 70%);box-shadow:0 2px 4px #0006}
-.eyebrow{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-bottom:.35rem}.panel h2{font-family:var(--mono);margin:0 0 .75rem;font-size:1.25rem}.panel p{line-height:1.55}.btn{font-family:var(--mono);font-size:.8rem;letter-spacing:.03em;background:var(--ink);color:var(--paper);border:0;border-radius:5px;padding:.7rem 1.1rem;cursor:pointer;margin-top:1rem}.btn:hover{background:#403a30}.btn.primary{background:var(--teal);color:#0d1c19}.btn:disabled{opacity:.4;cursor:not-allowed}
-.textfield{font-family:var(--sans);font-size:1rem;padding:.65rem .8rem;border:1px solid var(--edge);border-radius:6px;width:100%;max-width:320px;background:#fbf8f0;color:var(--ink)}.err{color:var(--red);font-size:.85rem;margin-top:.5rem;font-family:var(--mono);min-height:1.2em}
-.choices{display:flex;flex-direction:column;gap:.6rem;margin-top:1rem}.choice{display:block;text-align:left;font-family:var(--sans);font-size:.95rem;background:#fbf8f0;border:1px solid var(--edge);border-radius:6px;padding:.75rem .9rem;cursor:pointer;transition:.15s;color:var(--ink);width:100%}.choice:hover:not(:disabled){border-color:var(--soft)}.choice:disabled{cursor:default}.choice.correct{background:#dcefe9;border-color:var(--teal)}.choice.wrong{background:#f4dcd7;border-color:var(--red)}.feedback{margin-top:.9rem;font-size:.9rem;font-weight:600;line-height:1.5}.feedback.ok{color:#237a63}.feedback.bad{color:var(--red)}.hidden{display:none!important}.video-card iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:6px;display:block;margin-top:.75rem}.transcript{background:#fbf8f0;border:1px solid var(--edge);border-radius:6px;padding:.9rem 1rem;margin-top:.9rem;font-size:.9rem;line-height:1.5;color:var(--soft)}.transcript strong{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);display:block;margin-bottom:.3rem}.score-grid{display:flex;gap:1rem;margin:1.2rem 0;flex-wrap:wrap}.score-card{flex:1;min-width:140px;background:#fbf8f0;border:1px solid var(--edge);border-radius:8px;padding:1rem;text-align:center}.lbl{font-family:var(--mono);font-size:.72rem;color:var(--soft);text-transform:uppercase;letter-spacing:.06em}.score-big{font-size:2rem;font-weight:700}.muted-note{color:var(--muted);font-size:.85rem;margin-top:1rem;font-family:var(--mono)}table{width:100%;border-collapse:collapse;margin-top:1rem;font-family:var(--mono);font-size:.8rem}th{text-align:left;color:var(--soft);border-bottom:1px solid var(--edge);padding:.45rem}td{padding:.5rem .45rem;border-bottom:1px solid #e2d8bf}tr.me{background:#fff2df}.rank-title{font-family:var(--mono);font-weight:700;font-size:1.1rem;color:#237a63}.stage-note{background:#fff2df;border:1px solid var(--edge);padding:.75rem;border-radius:6px;font-size:.88rem;margin-top:1rem}.progressline{font-family:var(--mono);font-size:.78rem;color:var(--soft);margin-top:.6rem}
-@media(max-width:600px){body{padding:1rem .6rem 3rem}.panel{padding:1.2rem}.masthead h1{font-size:1.15rem}}
+:root {
+  --bg: #12161b;
+  --paper: #ede6d6;
+  --edge: #cdbfa0;
+  --ink: #2a2622;
+  --soft: #5a5248;
+  --amber: #e8a33d;
+  --teal: #3fa796;
+  --red: #c24c3b;
+  --muted: #8a96a3;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background:
+    radial-gradient(circle at 20% 10%, #1b232c 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, #1a2530 0%, transparent 45%),
+    var(--bg);
+  color: var(--paper);
+  font-family: var(--sans);
+  min-height: 100vh;
+  padding: 2rem 1rem 4rem;
+}
+
+.wrap { max-width: 900px; margin: auto; }
+
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 2px solid #33404d;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.case-no, .clearance, .agent-tag, .eyebrow, .meter-label {
+  font-family: var(--mono);
+}
+
+.case-no {
+  color: var(--amber);
+  font-size: .85rem;
+  letter-spacing: .08em;
+}
+
+.masthead h1 {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  margin: .15rem 0 0;
+  color: #f2eee4;
+}
+
+.clearance {
+  text-align: right;
+  font-size: .8rem;
+  color: var(--muted);
+}
+
+.clearance b { color: var(--teal); }
+
+.agent-tag {
+  font-size: .75rem;
+  color: var(--amber);
+}
+
+.meter {
+  height: 8px;
+  border-radius: 4px;
+  background: #232c35;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: 1px solid #333f4b;
+}
+
+.meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--teal));
+  width: 0%;
+  transition: width .3s;
+}
+
+.panel {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  padding: 1.75rem;
+  position: relative;
+  box-shadow: 0 12px 30px #0005;
+}
+
+.panel:before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f2d9c4, var(--red) 70%);
+  box-shadow: 0 2px 4px #0006;
+}
+
+.eyebrow {
+  font-size: .7rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-bottom: .35rem;
+}
+
+.panel h2 {
+  font-family: var(--mono);
+  margin: 0 0 .75rem;
+  font-size: 1.25rem;
+}
+
+.panel p { line-height: 1.55; }
+
+.btn {
+  font-family: var(--mono);
+  font-size: .8rem;
+  letter-spacing: .03em;
+  background: var(--ink);
+  color: var(--paper);
+  border: 0;
+  border-radius: 5px;
+  padding: .7rem 1.1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.btn:hover { background: #403a30; }
+
+.btn.primary {
+  background: var(--teal);
+  color: #0d1c19;
+}
+
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.textfield {
+  font-family: var(--sans);
+  font-size: 1rem;
+  padding: .65rem .8rem;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 320px;
+  background: #fbf8f0;
+  color: var(--ink);
+}
+
+.err {
+  color: var(--red);
+  font-size: .85rem;
+  margin-top: .5rem;
+  font-family: var(--mono);
+  min-height: 1.2em;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  margin-top: 1rem;
+}
+
+.choice {
+  display: block;
+  text-align: left;
+  font-family: var(--sans);
+  font-size: .95rem;
+  background: #fbf8f0;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: .75rem .9rem;
+  cursor: pointer;
+  transition: .15s;
+  color: var(--ink);
+  width: 100%;
+}
+
+.choice:hover:not(:disabled) { border-color: var(--soft); }
+.choice:disabled { cursor: default; }
+
+.choice.correct {
+  background: #dcefe9;
+  border-color: var(--teal);
+}
+
+.choice.wrong {
+  background: #f4dcd7;
+  border-color: var(--red);
+}
+
+.feedback {
+  margin-top: .9rem;
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.feedback.ok { color: #237a63; }
+.feedback.bad { color: var(--red); }
+.hidden { display: none !important; }
+
+.video-card iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 6px;
+  display: block;
+  margin-top: .75rem;
+}
+
+.transcript {
+  background: #fbf8f0;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: .9rem 1rem;
+  margin-top: .9rem;
+  font-size: .9rem;
+  line-height: 1.5;
+  color: var(--soft);
+}
+
+.transcript strong {
+  font-family: var(--mono);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink);
+  display: block;
+  margin-bottom: .3rem;
+}
+
+.score-grid {
+  display: flex;
+  gap: 1rem;
+  margin: 1.2rem 0;
+  flex-wrap: wrap;
+}
+
+.score-card {
+  flex: 1;
+  min-width: 140px;
+  background: #fbf8f0;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.lbl {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.score-big { font-size: 2rem; font-weight: 700; }
+
+.muted-note {
+  color: var(--muted);
+  font-size: .85rem;
+  margin-top: 1rem;
+  font-family: var(--mono);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: .8rem;
+}
+
+th {
+  text-align: left;
+  color: var(--soft);
+  border-bottom: 1px solid var(--edge);
+  padding: .45rem;
+}
+
+td {
+  padding: .5rem .45rem;
+  border-bottom: 1px solid #e2d8bf;
+}
+
+tr.me { background: #fff2df; }
+
+.rank-title {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #237a63;
+}
+
+.stage-note {
+  background: #fff2df;
+  border: 1px solid var(--edge);
+  padding: .75rem;
+  border-radius: 6px;
+  font-size: .88rem;
+  margin-top: 1rem;
+}
+
+.progressline {
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--soft);
+  margin-top: .6rem;
+}
+
+@media (max-width: 600px) {
+  body { padding: 1rem .6rem 3rem; }
+  .panel { padding: 1.2rem; }
+  .masthead h1 { font-size: 1.15rem; }
+}
 </style>
 </head>
+
 <body>
 <div class="wrap">
+
   <header class="masthead">
-    <div><div class="case-no">CYBER DEFENCE MISSION // CyT-AL3</div><h1>The Human Firewall</h1></div>
-    <div class="clearance">MISSION PROGRESS<br><b id="clearanceVal">0%</b><div class="agent-tag" id="agentTag"></div></div>
+    <div>
+      <div class="case-no">CYBER DEFENCE MISSION // CyT-AL3</div>
+      <h1>The Human Firewall</h1>
+    </div>
+    <div class="clearance">
+      MISSION PROGRESS<br>
+      <b id="clearanceVal">0%</b>
+      <div class="agent-tag" id="agentTag"></div>
+    </div>
   </header>
-  <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+
+  <div class="meter">
+    <div class="meter-fill" id="meterFill"></div>
+  </div>
 
   <section id="view-login" class="view">
     <div class="panel">
       <div class="eyebrow">Stage 00 · Agent Registration</div>
       <h2>Register to begin your cyber defence mission.</h2>
-      <p>Enter your name. Your assessment scores will be recorded to compare knowledge before and after training and to calculate your final mission rank.</p>
-      <input type="text" id="usernameInput" class="textfield" placeholder="Your name" maxlength="30" autocomplete="name">
-      <div class="err" id="loginErr"></div>
+      <p>
+        Enter your name. Your assessment scores will be recorded to compare
+        knowledge before and after training and to calculate your final mission rank.
+      </p>
+      <input
+        type="text"
+        id="usernameInput"
+        class="textfield"
+        placeholder="Your name"
+        maxlength="30"
+        autocomplete="name"
+      >
+      <div class="err" id="loginErr" aria-live="polite"></div>
       <button class="btn primary" onclick="doLogin()">Register and Begin →</button>
     </div>
   </section>
@@ -41,25 +382,59 @@
     <div class="panel">
       <div class="eyebrow">Stage 01 · Baseline Assessment</div>
       <h2>Initial Cybersecurity Assessment</h2>
-      <p>Answer each question based on what you currently know. This is an assessment, not a training activity. You will not receive correctness feedback, explanations, or a score during this stage.</p>
+      <p>
+        Answer each question based on what you currently know. This is an
+        assessment, not a training activity. You will not receive correctness
+        feedback, explanations, or a score during this stage.
+      </p>
       <div class="progressline">Question <span id="preQNum">1</span> of 6</div>
-      <h2 id="preQText"></h2><div class="choices" id="preChoices"></div>
+      <h2 id="preQText"></h2>
+      <div class="choices" id="preChoices"></div>
       <div class="feedback hidden" id="preFeedback"></div>
     </div>
   </section>
 
   <section id="view-video" class="view hidden">
     <div class="panel">
-      <div class="eyebrow" id="videoEyebrow">Training Module</div><h2 id="videoTitle"></h2>
+      <div class="eyebrow" id="videoEyebrow">Training Module</div>
+      <h2 id="videoTitle"></h2>
+
       <div id="videoWatchBlock">
-        <div class="video-card"><iframe id="videoFrame" src="" title="Cybersecurity training video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>
-        <div class="transcript"><strong>Key learning points</strong><span id="videoTranscript"></span></div>
-        <button class="btn primary" onclick="showVideoQuestions()">Complete Briefing →</button>
+        <div class="video-card">
+          <iframe
+            id="videoFrame"
+            src=""
+            title="Cybersecurity training video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            loading="lazy"
+          ></iframe>
+        </div>
+
+        <div class="transcript">
+          <strong>Key learning points</strong>
+          <span id="videoTranscript"></span>
+        </div>
+
+        <button class="btn primary" onclick="showVideoQuestions()">
+          Complete Briefing →
+        </button>
       </div>
+
       <div id="videoQuizBlock" class="hidden">
-        <div class="eyebrow">Mandatory Checkpoint · Question <span id="vqNum">1</span> of 2</div>
-        <h2 id="vqText"></h2><div class="choices" id="vqChoices"></div><div class="feedback" id="vqFeedback" aria-live="polite"></div>
-        <button class="btn primary hidden" id="vqContinue" onclick="continueCheckpoint()">Continue →</button>
+        <div class="eyebrow">
+          Mandatory Checkpoint · Question <span id="vqNum">1</span> of 2
+        </div>
+        <h2 id="vqText"></h2>
+        <div class="choices" id="vqChoices"></div>
+        <div class="feedback" id="vqFeedback" aria-live="polite"></div>
+        <button
+          class="btn primary hidden"
+          id="vqContinue"
+          onclick="continueCheckpoint()"
+        >
+          Continue →
+        </button>
       </div>
     </div>
   </section>
@@ -68,9 +443,14 @@
     <div class="panel">
       <div class="eyebrow">Stage 03 · Knowledge Retention</div>
       <h2>Post-Training Assessment</h2>
-      <p>These are the same six questions used in the initial assessment. Answer based on what you know now. No correctness feedback is shown during the assessment.</p>
+      <p>
+        These are the same six questions used in the initial assessment.
+        Answer based on what you know now. No correctness feedback is shown
+        during the assessment.
+      </p>
       <div class="progressline">Question <span id="postQNum">1</span> of 6</div>
-      <h2 id="postQText"></h2><div class="choices" id="postChoices"></div>
+      <h2 id="postQText"></h2>
+      <div class="choices" id="postChoices"></div>
     </div>
   </section>
 
@@ -78,94 +458,922 @@
     <div class="panel">
       <div class="eyebrow">Stage 04 · Cyber Defence Challenge</div>
       <h2>Final Mission Quiz</h2>
-      <p>Answer all ten questions. Your final rank is based on this quiz, not your pre-training score.</p>
+      <p>
+        Answer all ten questions. Your final rank is based on this quiz,
+        not your pre-training score.
+      </p>
       <div class="progressline">Question <span id="finalQNum">1</span> of 10</div>
-      <h2 id="finalQText"></h2><div class="choices" id="finalChoices"></div>
+      <h2 id="finalQText"></h2>
+      <div class="choices" id="finalChoices"></div>
     </div>
   </section>
 
   <section id="view-results" class="view hidden">
     <div class="panel">
-      <div class="eyebrow">Mission Complete</div><h2>Assessment Results</h2>
+      <div class="eyebrow">Mission Complete</div>
+      <h2>Assessment Results</h2>
+
       <div class="score-grid">
-        <div class="score-card"><div class="lbl">Pre-training</div><div class="score-big" id="preScoreOut">0/6</div></div>
-        <div class="score-card"><div class="lbl">Post-training</div><div class="score-big" id="postScoreOut">0/6</div></div>
-        <div class="score-card"><div class="lbl">Final quiz</div><div class="score-big" id="finalScoreOut">0/10</div></div>
+        <div class="score-card">
+          <div class="lbl">Pre-training</div>
+          <div class="score-big" id="preScoreOut">0/6</div>
+        </div>
+        <div class="score-card">
+          <div class="lbl">Post-training</div>
+          <div class="score-big" id="postScoreOut">0/6</div>
+        </div>
+        <div class="score-card">
+          <div class="lbl">Final quiz</div>
+          <div class="score-big" id="finalScoreOut">0/10</div>
+        </div>
       </div>
-      <p>Knowledge change from pre-training to post-training: <strong id="changeOut">0 percentage points</strong></p>
-      <p class="rank-title" id="rankTitleOut"></p><p id="rankDescription"></p>
+
+      <p>
+        Knowledge change from pre-training to post-training:
+        <strong id="changeOut">0 percentage points</strong>
+      </p>
+
+      <p class="rank-title" id="rankTitleOut"></p>
+      <p id="rankDescription"></p>
+
       <div class="eyebrow" style="margin-top:1.5rem">Leaderboard</div>
-      <table><thead><tr><th>#</th><th>Agent</th><th>Final score</th><th>Rank</th><th>Time</th></tr></thead><tbody id="leaderboardBody"></tbody></table>
-      <div class="muted-note" id="rankNote"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Agent</th>
+            <th>Final score</th>
+            <th>Rank</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+
+      <div class="muted-note" id="rankNote" aria-live="polite"></div>
       <button class="btn" onclick="restart()">Run Again</button>
     </div>
   </section>
+
 </div>
+
 <script>
-/*
-  FRONT-END DRAFT ONLY.
-  Before deployment, update server.js/Neon to accept and store:
-  preScore (0-6), postScore (0-6), finalScore (0-10), rankTitle, timeSeconds.
-  The third video uses the National Cybersecurity Alliance Data Handling episode; backend updates are still required before deployment.
-*/
+"use strict";
+
 const assessmentQuestions = [
-  {q:"Which approach generally creates the strongest password?",options:["A long, unique passphrase that is hard to guess","A short password with a symbol at the end","A familiar word followed by the current year","The same complex password used on every account"],correct:0},
-  {q:"You receive an unexpected email asking you to sign in urgently. What should you do first?",options:["Use the email link before the deadline","Reply with your username to confirm the account","Verify the request through a trusted channel","Trust it if the message uses the company logo"],correct:2},
-  {q:"What is the safest way to handle a link in an unexpected email?",options:["Click it if the displayed text looks familiar","Check the actual destination and verify the message before opening it","Open it on your phone instead","Forward it to colleagues to see whether they trust it"],correct:1},
-  {q:"You receive a spreadsheet containing employee salary information by mistake. What is the best action?",options:["Forward it to your team for advice","Save a personal copy in case it is needed","Upload it to a public file-sharing site","Do not share it; report the mistake through the approved channel"],correct:3},
-  {q:"A person you do not recognise asks you to hold open a secure office door. What should you do?",options:["Let them in if they look like a delivery worker","Ask them to badge in separately or verify their access","Hold the door if they say they are in a hurry","Assume another employee has already checked them"],correct:1},
-  {q:"What should you do if you think you have entered your password on a phishing page?",options:["Ignore it if the page looked professional","Delete the email and tell nobody","Report it promptly and change the affected password using the official site","Wait to see whether the account behaves differently"],correct:2}
+  {
+    q: "Which approach generally creates the strongest password?",
+    options: [
+      "A long, unique passphrase that is hard to guess",
+      "A short password with a symbol at the end",
+      "A familiar word followed by the current year",
+      "The same complex password used on every account"
+    ],
+    correct: 0
+  },
+  {
+    q: "You receive an unexpected email asking you to sign in urgently. What should you do first?",
+    options: [
+      "Use the email link before the deadline",
+      "Reply with your username to confirm the account",
+      "Verify the request through a trusted channel",
+      "Trust it if the message uses the company logo"
+    ],
+    correct: 2
+  },
+  {
+    q: "What is the safest way to handle a link in an unexpected email?",
+    options: [
+      "Click it if the displayed text looks familiar",
+      "Check the actual destination and verify the message before opening it",
+      "Open it on your phone instead",
+      "Forward it to colleagues to see whether they trust it"
+    ],
+    correct: 1
+  },
+  {
+    q: "You receive a spreadsheet containing employee salary information by mistake. What is the best action?",
+    options: [
+      "Forward it to your team for advice",
+      "Save a personal copy in case it is needed",
+      "Upload it to a public file-sharing site",
+      "Do not share it; report the mistake through the approved channel"
+    ],
+    correct: 3
+  },
+  {
+    q: "A person you do not recognise asks you to hold open a secure office door. What should you do?",
+    options: [
+      "Let them in if they look like a delivery worker",
+      "Ask them to badge in separately or verify their access",
+      "Hold the door if they say they are in a hurry",
+      "Assume another employee has already checked them"
+    ],
+    correct: 1
+  },
+  {
+    q: "What should you do if you think you have entered your password on a phishing page?",
+    options: [
+      "Ignore it if the page looked professional",
+      "Delete the email and tell nobody",
+      "Report it promptly and change the affected password using the official site",
+      "Wait to see whether the account behaves differently"
+    ],
+    correct: 2
+  }
 ];
 
 const videoModules = [
-  {title:"Password Defence",youtubeId:"gJdylzi6lHw",transcript:"Password length and uniqueness matter. Avoid predictable substitutions and never reuse a password across accounts. Use an approved password manager where available.",questions:[
-    {q:"What is most important when creating a strong password?",options:["Length and uniqueness","A capital letter at the beginning only","Your pet's name","The current month and year"],correct:0,why:"Long, unique passwords are harder to guess and prevent one breach from exposing other accounts.",wrongFeedback:["A capital letter alone does not make a password strong if it is short or predictable.","A familiar name or word can often be guessed or found through public information.","Predictable date patterns are easy to guess and should not be used as a password strategy."]},
-    {q:"What should you do with passwords across different accounts?",options:["Reuse one strong password everywhere","Change only the last digit","Use a unique password for each account","Share them with a trusted colleague"],correct:2,why:"Unique passwords limit the damage if one account is compromised.",wrongFeedback:["Reusing one password means a leak from one service could expose every account using it.","Changing only one digit creates predictable variations and still risks password reuse.","Passwords should not be shared with colleagues; use approved account access methods instead."]}
-  ]},
-  {title:"Phishing Hunter",youtubeId:"Kqj3f5uAgKE",transcript:"Phishing messages may create urgency or impersonate trusted people. Check the sender's actual domain and the real destination of links. When unsure, verify through a separate trusted channel.",questions:[
-    {q:"Why can spear-phishing messages be convincing?",options:["They always contain obvious spelling mistakes","They are personalised using information about the target","They only target senior executives","They cannot imitate real organisations"],correct:1,why:"Personal details can make a fraudulent message appear relevant and trustworthy.",wrongFeedback:["Spear-phishing can be well written and may contain no obvious spelling errors.","Spear-phishing can target employees at many levels, not only executives.","Attackers can imitate organisations and trusted contacts, so verify the message independently."]},
-    {q:"An unexpected email contains a link to sign in. What is the safest response?",options:["Click quickly before the link expires","Trust the logo and formatting","Enter credentials to check whether it is genuine","Verify the request independently and inspect the destination before using it"],correct:3,why:"Independent verification helps prevent credential theft through fake sign-in pages.",wrongFeedback:["Urgency is a common pressure tactic; do not click before checking the request.","Branding can be copied and is not proof that a message is genuine.","Entering credentials into an unverified page can expose your account."]}
-  ]},
-  {title:"Data Guardian",youtubeId:"hsNRrEnB_aM",transcript:"Handle personal, employee, customer and business-sensitive information only through approved systems. Share it only with authorised people who need it, and report accidental exposure promptly.",questions:[
-    {q:"You accidentally receive a file containing customer personal data. What should you do?",options:["Forward it to your personal email","Share it with a colleague out of curiosity","Avoid further sharing and report it through the approved process","Upload it to a public service to inspect it"],correct:2,why:"Limiting further exposure and reporting the incident allows the organisation to respond appropriately.",wrongFeedback:["Personal email is not an approved place to store sensitive work information and increases exposure.","Curiosity is not a valid business reason to share personal data; limit access and report it.","Public file-sharing can expose personal data to unauthorised people and services."]},
-    {q:"What is the safest way to share a confidential work document?",options:["Use an approved system and restrict access to authorised recipients","Use a public link so sharing is easier","Send it to anyone who requests it","Copy it to a personal cloud account"],correct:0,why:"Approved tools and access restrictions reduce the risk of unauthorised disclosure.",wrongFeedback:["A public link may allow people outside the intended audience to access the document.","A request alone does not establish that the recipient is authorised to receive confidential data.","Personal cloud accounts may not have the organisation's required security and access controls."]}
-  ]}
+  {
+    title: "Password Defence",
+    youtubeId: "gJdylzi6lHw",
+    transcript:
+      "Password length and uniqueness matter. Avoid predictable substitutions and never reuse a password across accounts. Use an approved password manager where available.",
+    questions: [
+      {
+        q: "What is most important when creating a strong password?",
+        options: [
+          "Length and uniqueness",
+          "A capital letter at the beginning only",
+          "Your pet's name",
+          "The current month and year"
+        ],
+        correct: 0,
+        why:
+          "Long, unique passwords are harder to guess and prevent one breach from exposing other accounts.",
+        wrongFeedback: [
+          "A capital letter alone does not make a password strong if it is short or predictable.",
+          "A familiar name or word can often be guessed or found through public information.",
+          "Predictable date patterns are easy to guess and should not be used as a password strategy."
+        ]
+      },
+      {
+        q: "What should you do with passwords across different accounts?",
+        options: [
+          "Reuse one strong password everywhere",
+          "Change only the last digit",
+          "Use a unique password for each account",
+          "Share them with a trusted colleague"
+        ],
+        correct: 2,
+        why:
+          "Unique passwords limit the damage if one account is compromised.",
+        wrongFeedback: [
+          "Reusing one password means a leak from one service could expose every account using it.",
+          "Changing only one digit creates predictable variations and still risks password reuse.",
+          "Passwords should not be shared with colleagues; use approved account access methods instead."
+        ]
+      }
+    ]
+  },
+  {
+    title: "Phishing Hunter",
+    youtubeId: "Kqj3f5uAgKE",
+    transcript:
+      "Phishing messages may create urgency or impersonate trusted people. Check the sender's actual domain and the real destination of links. When unsure, verify through a separate trusted channel.",
+    questions: [
+      {
+        q: "Why can spear-phishing messages be convincing?",
+        options: [
+          "They always contain obvious spelling mistakes",
+          "They are personalised using information about the target",
+          "They only target senior executives",
+          "They cannot imitate real organisations"
+        ],
+        correct: 1,
+        why:
+          "Personal details can make a fraudulent message appear relevant and trustworthy.",
+        wrongFeedback: [
+          "Spear-phishing can be well written and may contain no obvious spelling errors.",
+          "Spear-phishing can target employees at many levels, not only executives.",
+          "Attackers can imitate organisations and trusted contacts, so verify the message independently."
+        ]
+      },
+      {
+        q: "An unexpected email contains a link to sign in. What is the safest response?",
+        options: [
+          "Click quickly before the link expires",
+          "Trust the logo and formatting",
+          "Enter credentials to check whether it is genuine",
+          "Verify the request independently and inspect the destination before using it"
+        ],
+        correct: 3,
+        why:
+          "Independent verification helps prevent credential theft through fake sign-in pages.",
+        wrongFeedback: [
+          "Urgency is a common pressure tactic; do not click before checking the request.",
+          "Branding can be copied and is not proof that a message is genuine.",
+          "Entering credentials into an unverified page can expose your account."
+        ]
+      }
+    ]
+  },
+  {
+    title: "Data Guardian",
+    youtubeId: "hsNRrEnB_aM",
+    transcript:
+      "Handle personal, employee, customer and business-sensitive information only through approved systems. Share it only with authorised people who need it, and report accidental exposure promptly.",
+    questions: [
+      {
+        q: "You accidentally receive a file containing customer personal data. What should you do?",
+        options: [
+          "Forward it to your personal email",
+          "Share it with a colleague out of curiosity",
+          "Avoid further sharing and report it through the approved process",
+          "Upload it to a public service to inspect it"
+        ],
+        correct: 2,
+        why:
+          "Limiting further exposure and reporting the incident allows the organisation to respond appropriately.",
+        wrongFeedback: [
+          "Personal email is not an approved place to store sensitive work information and increases exposure.",
+          "Curiosity is not a valid business reason to share personal data; limit access and report it.",
+          "Public file-sharing can expose personal data to unauthorised people and services."
+        ]
+      },
+      {
+        q: "What is the safest way to share a confidential work document?",
+        options: [
+          "Use an approved system and restrict access to authorised recipients",
+          "Use a public link so sharing is easier",
+          "Send it to anyone who requests it",
+          "Copy it to a personal cloud account"
+        ],
+        correct: 0,
+        why:
+          "Approved tools and access restrictions reduce the risk of unauthorised disclosure.",
+        wrongFeedback: [
+          "A public link may allow people outside the intended audience to access the document.",
+          "A request alone does not establish that the recipient is authorised to receive confidential data.",
+          "Personal cloud accounts may not have the organisation's required security and access controls."
+        ]
+      }
+    ]
+  }
 ];
 
 const finalQuiz = [
- {q:"Which password is the best choice?",options:["Summer2026!","A long, unique passphrase not used elsewhere","CompanyName123","One password shared by the team"],correct:1,why:"A long, unique password reduces guessing and reuse risks."},
- {q:"A message says your account will be closed in 30 minutes unless you sign in. What is the best response?",options:["Use the link immediately","Reply with your password","Verify the claim through a trusted channel before taking action","Trust it if the sender display name looks familiar"],correct:2,why:"Urgency is commonly used to pressure people into unsafe decisions."},
- {q:"Which clue most directly helps you inspect a suspicious link?",options:["The sender used a company logo","The email has a signature","The message arrived during office hours","The actual destination domain differs from the expected organisation"],correct:3,why:"A mismatch between the expected organisation and actual destination is a warning sign."},
- {q:"You receive confidential employee data that you do not need for your job. What should you do?",options:["Do not share it and report the misdirected data appropriately","Forward it to your whole team","Save it to your personal drive","Keep it for possible future use"],correct:0,why:"Sensitive information should only be accessed and shared for authorised business purposes."},
- {q:"A stranger follows you toward a secure door without presenting a badge. What should you do?",options:["Let them follow because the door is already open","Politely ask them to badge in or verify their access","Assume their uniform proves they are authorised","Hold the door if they are carrying boxes"],correct:1,why:"Each person should be independently authorised to enter a secure area."},
- {q:"What is the main risk of reusing a password?",options:["It makes the password too long","It prevents password managers from working","One compromised account may expose other accounts using the same password","It automatically deletes account history"],correct:2,why:"Attackers may try leaked credentials on other services."},
- {q:"You suspect that you clicked a phishing link and entered your password. What should you do?",options:["Wait several days","Delete your browser history only","Tell coworkers but take no other action","Report it promptly and change the password through the official service"],correct:3,why:"Prompt reporting and securing the affected account can reduce harm."},
- {q:"Which is the safest way to share a sensitive document?",options:["Use an approved tool with access limited to authorised recipients","Use a public link for convenience","Send it to a personal email account","Post it in a general chat channel"],correct:0,why:"Access controls help prevent unauthorised disclosure."},
- {q:"An email asks you to bypass a normal security procedure because a manager is in a hurry. What should you do?",options:["Comply because managers can override all controls","Follow the approved process and verify the request","Ask the sender to promise it is safe","Send the requested information to a personal address"],correct:1,why:"Urgency or authority should not replace required security checks."},
- {q:"What should you do if you find sensitive information exposed in an unauthorised location?",options:["Download a copy before it disappears","Share the location with friends for advice","Avoid spreading it further and report it using the approved incident channel","Ignore it if it is not your department"],correct:2,why:"Reporting through the approved channel helps the organisation contain the exposure."}
+  {
+    q: "Which password is the best choice?",
+    options: [
+      "Summer2026!",
+      "A long, unique passphrase not used elsewhere",
+      "CompanyName123",
+      "One password shared by the team"
+    ],
+    correct: 1,
+    why: "A long, unique password reduces guessing and reuse risks."
+  },
+  {
+    q: "A message says your account will be closed in 30 minutes unless you sign in. What is the best response?",
+    options: [
+      "Use the link immediately",
+      "Reply with your password",
+      "Verify the claim through a trusted channel before taking action",
+      "Trust it if the sender display name looks familiar"
+    ],
+    correct: 2,
+    why: "Urgency is commonly used to pressure people into unsafe decisions."
+  },
+  {
+    q: "Which clue most directly helps you inspect a suspicious link?",
+    options: [
+      "The sender used a company logo",
+      "The email has a signature",
+      "The message arrived during office hours",
+      "The actual destination domain differs from the expected organisation"
+    ],
+    correct: 3,
+    why: "A mismatch between the expected organisation and actual destination is a warning sign."
+  },
+  {
+    q: "You receive confidential employee data that you do not need for your job. What should you do?",
+    options: [
+      "Do not share it and report the misdirected data appropriately",
+      "Forward it to your whole team",
+      "Save it to your personal drive",
+      "Keep it for possible future use"
+    ],
+    correct: 0,
+    why: "Sensitive information should only be accessed and shared for authorised business purposes."
+  },
+  {
+    q: "A stranger follows you toward a secure door without presenting a badge. What should you do?",
+    options: [
+      "Let them follow because the door is already open",
+      "Politely ask them to badge in or verify their access",
+      "Assume their uniform proves they are authorised",
+      "Hold the door if they are carrying boxes"
+    ],
+    correct: 1,
+    why: "Each person should be independently authorised to enter a secure area."
+  },
+  {
+    q: "What is the main risk of reusing a password?",
+    options: [
+      "It makes the password too long",
+      "It prevents password managers from working",
+      "One compromised account may expose other accounts using the same password",
+      "It automatically deletes account history"
+    ],
+    correct: 2,
+    why: "Attackers may try leaked credentials on other services."
+  },
+  {
+    q: "You suspect that you clicked a phishing link and entered your password. What should you do?",
+    options: [
+      "Wait several days",
+      "Delete your browser history only",
+      "Tell coworkers but take no other action",
+      "Report it promptly and change the password through the official service"
+    ],
+    correct: 3,
+    why: "Prompt reporting and securing the affected account can reduce harm."
+  },
+  {
+    q: "Which is the safest way to share a sensitive document?",
+    options: [
+      "Use an approved tool with access limited to authorised recipients",
+      "Use a public link for convenience",
+      "Send it to a personal email account",
+      "Post it in a general chat channel"
+    ],
+    correct: 0,
+    why: "Access controls help prevent unauthorised disclosure."
+  },
+  {
+    q: "An email asks you to bypass a normal security procedure because a manager is in a hurry. What should you do?",
+    options: [
+      "Comply because managers can override all controls",
+      "Follow the approved process and verify the request",
+      "Ask the sender to promise it is safe",
+      "Send the requested information to a personal address"
+    ],
+    correct: 1,
+    why: "Urgency or authority should not replace required security checks."
+  },
+  {
+    q: "What should you do if you find sensitive information exposed in an unauthorised location?",
+    options: [
+      "Download a copy before it disappears",
+      "Share the location with friends for advice",
+      "Avoid spreading it further and report it using the approved incident channel",
+      "Ignore it if it is not your department"
+    ],
+    correct: 2,
+    why: "Reporting through the approved channel helps the organisation contain the exposure."
+  }
 ];
 
-let state = {username:null,startTime:null,preIdx:0,preAnswers:[],preScore:0,videoIdx:0,videoQIdx:0,checkpointCorrect:false,postIdx:0,postAnswers:[],postScore:0,finalIdx:0,finalScore:0};
-const views = ["login","pretest","video","posttest","finalquiz","results"];
-function goTo(name){views.forEach(v=>document.getElementById("view-"+v).classList.toggle("hidden",v!==name));updateMeter();if(name==="pretest")renderAssessment("pre");if(name==="video")renderVideo();if(name==="posttest")renderAssessment("post");if(name==="finalquiz")renderFinal();}
-function updateMeter(){const map={login:0,pretest:8,video:20,posttest:65,finalquiz:78,results:100};const current=views.find(v=>!document.getElementById("view-"+v).classList.contains("hidden"));const pct=map[current]||0;document.getElementById("meterFill").style.width=pct+"%";document.getElementById("clearanceVal").textContent=pct+"%";}
-async function doLogin(){const name=document.getElementById("usernameInput").value.trim();const err=document.getElementById("loginErr");if(!name){err.textContent="Enter your name to continue.";return;}err.textContent="";try{const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:name})});if(!r.ok)throw new Error();const d=await r.json();state.username=d.username||name;}catch(e){err.textContent="Could not register with the server. Check the connection and try again.";return;}document.getElementById("agentTag").textContent="AGENT: "+state.username;state.startTime=Date.now();goTo("pretest");}
-function renderAssessment(which){const pre=which==="pre";const idx=pre?state.preIdx:state.postIdx;const q=assessmentQuestions[idx];document.getElementById(pre?"preQNum":"postQNum").textContent=idx+1;document.getElementById(pre?"preQText":"postQText").textContent=q.q;const box=document.getElementById(pre?"preChoices":"postChoices");box.innerHTML="";q.options.forEach((opt,i)=>{const b=document.createElement("button");b.type="button";b.className="choice";b.textContent=opt;b.onclick=()=>answerAssessment(which,i);box.appendChild(b);});}
-function answerAssessment(which,choice){const pre=which==="pre";const idx=pre?state.preIdx:state.postIdx;const q=assessmentQuestions[idx];if(pre)state.preAnswers.push(choice);else state.postAnswers.push(choice);const box=document.getElementById(pre?"preChoices":"postChoices");[...box.children].forEach(b=>b.disabled=true);if(pre)state.preScore+=choice===q.correct?1:0;else state.postScore+=choice===q.correct?1:0;setTimeout(()=>{if(pre){state.preIdx++;if(state.preIdx<assessmentQuestions.length)renderAssessment("pre");else{state.videoIdx=0;state.videoQIdx=0;goTo("video");}}else{state.postIdx++;if(state.postIdx<assessmentQuestions.length)renderAssessment("post");else{state.finalIdx=0;goTo("finalquiz");}}},150);}
-function renderVideo(){const m=videoModules[state.videoIdx];document.getElementById("videoEyebrow").textContent=`Training Module ${state.videoIdx+1} of ${videoModules.length}`;document.getElementById("videoTitle").textContent=m.title;const frame=document.getElementById("videoFrame");frame.src=m.youtubeId.startsWith("REPLACE_")?"about:blank":`https://www.youtube.com/embed/${m.youtubeId}`;document.getElementById("videoTranscript").textContent=m.transcript;document.getElementById("videoWatchBlock").classList.remove("hidden");document.getElementById("videoQuizBlock").classList.add("hidden");}
-function showVideoQuestions(){document.getElementById("videoWatchBlock").classList.add("hidden");document.getElementById("videoQuizBlock").classList.remove("hidden");state.videoQIdx=0;renderCheckpoint();}
-function renderCheckpoint(){const q=videoModules[state.videoIdx].questions[state.videoQIdx];state.checkpointCorrect=false;document.getElementById("vqNum").textContent=state.videoQIdx+1;document.getElementById("vqText").textContent=q.q;document.getElementById("vqFeedback").textContent="";document.getElementById("vqFeedback").className="feedback";document.getElementById("vqContinue").classList.add("hidden");const box=document.getElementById("vqChoices");box.innerHTML="";q.options.forEach((opt,i)=>{const b=document.createElement("button");b.type="button";b.className="choice";b.textContent=opt;b.onclick=()=>answerCheckpoint(i,b,q);box.appendChild(b);});}
-function answerCheckpoint(choice,button,q){if(state.checkpointCorrect)return;const box=button.parentElement;const correct=choice===q.correct;if(correct){button.classList.add("correct");[...box.children].forEach(b=>b.disabled=true);state.checkpointCorrect=true;document.getElementById("vqFeedback").textContent="Correct. "+q.why;document.getElementById("vqFeedback").className="feedback ok";document.getElementById("vqContinue").classList.remove("hidden");}else{button.classList.add("wrong");button.disabled=true;const feedbackIndex=choice<q.correct?choice:choice-1;const selectedFeedback=(q.wrongFeedback&&q.wrongFeedback[feedbackIndex])||"This choice does not follow the safe practice described in the training.";document.getElementById("vqFeedback").textContent="Not quite. "+selectedFeedback+" Correct principle: "+q.why+" Try another option.";document.getElementById("vqFeedback").className="feedback bad";}}
-function continueCheckpoint(){state.videoQIdx++;if(state.videoQIdx<videoModules[state.videoIdx].questions.length){renderCheckpoint();return;}state.videoIdx++;if(state.videoIdx<videoModules.length)renderVideo();else goTo("posttest");}
-function renderFinal(){const q=finalQuiz[state.finalIdx];document.getElementById("finalQNum").textContent=state.finalIdx+1;document.getElementById("finalQText").textContent=q.q;const box=document.getElementById("finalChoices");box.innerHTML="";q.options.forEach((opt,i)=>{const b=document.createElement("button");b.type="button";b.className="choice";b.textContent=opt;b.onclick=()=>answerFinal(i);box.appendChild(b);});}
-function answerFinal(choice){const q=finalQuiz[state.finalIdx];if(choice===q.correct)state.finalScore++;const box=document.getElementById("finalChoices");[...box.children].forEach(b=>b.disabled=true);setTimeout(()=>{state.finalIdx++;if(state.finalIdx<finalQuiz.length)renderFinal();else finishAndSubmit();},150);}
-function getRank(score){const pct=score*10;if(pct<50)return "Rookie Under Review";if(pct<60)return "Cyber Recruit";if(pct<70)return "Threat Hunter";if(pct<80)return "Cyber Sentinel";if(pct<90)return "Cyber Guardian";return "Cyber Overlord";}
-function fmtTime(sec){return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");}
-async function finishAndSubmit(){const timeSeconds=Math.max(1,Math.round((Date.now()-state.startTime)/1000));const rankTitle=getRank(state.finalScore);document.getElementById("preScoreOut").textContent=state.preScore+"/6";document.getElementById("postScoreOut").textContent=state.postScore+"/6";document.getElementById("finalScoreOut").textContent=state.finalScore+"/10";const change=Math.round((state.postScore/6-state.preScore/6)*100);document.getElementById("changeOut").textContent=(change>0?"+":"")+change+" percentage points";document.getElementById("rankTitleOut").textContent=rankTitle;document.getElementById("rankDescription").textContent=state.finalScore>=5?"You passed the final challenge with a score of "+(state.finalScore*10)+"%.":"You did not reach the 50% passing mark. Review the training and try again.";goTo("results");
-try{const r=await fetch("/api/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:state.username,preScore:state.preScore,postScore:state.postScore,finalScore:state.finalScore,rankTitle,timeSeconds})});if(!r.ok)throw new Error("server schema not updated");}catch(e){document.getElementById("rankNote").textContent="Scores are shown locally, but saving requires the matching server.js/Neon update before deployment.";}
-try{const r=await fetch("/api/leaderboard");if(!r.ok)throw new Error();const board=await r.json();renderLeaderboard(board);}catch(e){if(!document.getElementById("rankNote").textContent)document.getElementById("rankNote").textContent="Leaderboard unavailable until the server update is completed.";}}
-function renderLeaderboard(board){const body=document.getElementById("leaderboardBody");body.innerHTML="";if(!Array.isArray(board)){document.getElementById("rankNote").textContent="Leaderboard response format is not recognised. The updated backend is required before deployment.";return;}if(board.some(row=>row.final_score===undefined&&row.finalScore===undefined)){document.getElementById("rankNote").textContent="The current server still returns the old leaderboard format. The leaderboard will be enabled after the backend is updated to store final quiz scores.";return;}board.forEach((row,i)=>{const tr=document.createElement("tr");if(row.username===state.username)tr.classList.add("me");const score=Number(row.final_score??row.finalScore);const rank=row.rank_title||row.rankTitle||getRank(score);const time=Number(row.time_seconds??row.timeSeconds??0);[i+1,row.username,score+"/10",rank,fmtTime(time)].forEach(value=>{const td=document.createElement("td");td.textContent=value;tr.appendChild(td);});body.appendChild(tr);});const pos=board.findIndex(r=>r.username===state.username)+1;document.getElementById("rankNote").textContent=pos>0?`Your current leaderboard position is #${pos}.`:"Your result is not yet listed on the leaderboard.";}
-function restart(){state={username:null,startTime:null,preIdx:0,preAnswers:[],preScore:0,videoIdx:0,videoQIdx:0,checkpointCorrect:false,postIdx:0,postAnswers:[],postScore:0,finalIdx:0,finalScore:0};document.getElementById("usernameInput").value="";document.getElementById("agentTag").textContent="";document.getElementById("rankNote").textContent="";goTo("login");}
+let state = {
+  username: null,
+  startTime: null,
+  preIdx: 0,
+  preAnswers: [],
+  preScore: 0,
+  videoIdx: 0,
+  videoQIdx: 0,
+  checkpointCorrect: false,
+  postIdx: 0,
+  postAnswers: [],
+  postScore: 0,
+  finalIdx: 0,
+  finalScore: 0
+};
+
+const views = [
+  "login",
+  "pretest",
+  "video",
+  "posttest",
+  "finalquiz",
+  "results"
+];
+
+function goTo(name) {
+  views.forEach(function (view) {
+    document
+      .getElementById("view-" + view)
+      .classList.toggle("hidden", view !== name);
+  });
+
+  updateMeter();
+
+  if (name === "pretest") renderAssessment("pre");
+  if (name === "video") renderVideo();
+  if (name === "posttest") renderAssessment("post");
+  if (name === "finalquiz") renderFinal();
+}
+
+function updateMeter() {
+  const map = {
+    login: 0,
+    pretest: 8,
+    video: 20,
+    posttest: 65,
+    finalquiz: 78,
+    results: 100
+  };
+
+  const current = views.find(function (view) {
+    return !document.getElementById("view-" + view).classList.contains("hidden");
+  });
+
+  const pct = map[current] || 0;
+
+  document.getElementById("meterFill").style.width = pct + "%";
+  document.getElementById("clearanceVal").textContent = pct + "%";
+}
+
+async function doLogin() {
+  const name = document.getElementById("usernameInput").value.trim();
+  const err = document.getElementById("loginErr");
+
+  if (!name) {
+    err.textContent = "Enter your name to continue.";
+    return;
+  }
+
+  err.textContent = "";
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: name })
+    });
+
+    if (!response.ok) {
+      throw new Error("Registration failed");
+    }
+
+    const data = await response.json();
+    state.username = data.username || name;
+  } catch (error) {
+    err.textContent =
+      "Could not register with the server. Check the connection and try again.";
+    return;
+  }
+
+  document.getElementById("agentTag").textContent =
+    "AGENT: " + state.username;
+
+  state.startTime = Date.now();
+  goTo("pretest");
+}
+
+function renderAssessment(which) {
+  const isPre = which === "pre";
+  const idx = isPre ? state.preIdx : state.postIdx;
+  const question = assessmentQuestions[idx];
+
+  document.getElementById(
+    isPre ? "preQNum" : "postQNum"
+  ).textContent = idx + 1;
+
+  document.getElementById(
+    isPre ? "preQText" : "postQText"
+  ).textContent = question.q;
+
+  const box = document.getElementById(
+    isPre ? "preChoices" : "postChoices"
+  );
+
+  box.innerHTML = "";
+
+  question.options.forEach(function (option, index) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice";
+    button.textContent = option;
+
+    button.onclick = function () {
+      answerAssessment(which, index);
+    };
+
+    box.appendChild(button);
+  });
+}
+
+function answerAssessment(which, choice) {
+  const isPre = which === "pre";
+  const idx = isPre ? state.preIdx : state.postIdx;
+  const question = assessmentQuestions[idx];
+
+  if (isPre) {
+    state.preAnswers.push(choice);
+  } else {
+    state.postAnswers.push(choice);
+  }
+
+  const box = document.getElementById(
+    isPre ? "preChoices" : "postChoices"
+  );
+
+  Array.from(box.children).forEach(function (button) {
+    button.disabled = true;
+  });
+
+  if (isPre) {
+    state.preScore += choice === question.correct ? 1 : 0;
+  } else {
+    state.postScore += choice === question.correct ? 1 : 0;
+  }
+
+  // No correctness feedback or score is shown during either assessment.
+  window.setTimeout(function () {
+    if (isPre) {
+      state.preIdx++;
+
+      if (state.preIdx < assessmentQuestions.length) {
+        renderAssessment("pre");
+      } else {
+        state.videoIdx = 0;
+        state.videoQIdx = 0;
+        goTo("video");
+      }
+    } else {
+      state.postIdx++;
+
+      if (state.postIdx < assessmentQuestions.length) {
+        renderAssessment("post");
+      } else {
+        state.finalIdx = 0;
+        state.finalScore = 0;
+        goTo("finalquiz");
+      }
+    }
+  }, 150);
+}
+
+function renderVideo() {
+  const module = videoModules[state.videoIdx];
+
+  document.getElementById("videoEyebrow").textContent =
+    "Training Module " + (state.videoIdx + 1) +
+    " of " + videoModules.length;
+
+  document.getElementById("videoTitle").textContent = module.title;
+
+  const frame = document.getElementById("videoFrame");
+
+  frame.src = module.youtubeId.startsWith("REPLACE_")
+    ? "about:blank"
+    : "https://www.youtube.com/embed/" + module.youtubeId;
+
+  document.getElementById("videoTranscript").textContent =
+    module.transcript;
+
+  document.getElementById("videoWatchBlock").classList.remove("hidden");
+  document.getElementById("videoQuizBlock").classList.add("hidden");
+}
+
+function showVideoQuestions() {
+  document.getElementById("videoWatchBlock").classList.add("hidden");
+  document.getElementById("videoQuizBlock").classList.remove("hidden");
+
+  state.videoQIdx = 0;
+  renderCheckpoint();
+}
+
+function renderCheckpoint() {
+  const question =
+    videoModules[state.videoIdx].questions[state.videoQIdx];
+
+  state.checkpointCorrect = false;
+
+  document.getElementById("vqNum").textContent =
+    state.videoQIdx + 1;
+
+  document.getElementById("vqText").textContent = question.q;
+
+  const feedback = document.getElementById("vqFeedback");
+  feedback.textContent = "";
+  feedback.className = "feedback";
+
+  document.getElementById("vqContinue").classList.add("hidden");
+
+  const box = document.getElementById("vqChoices");
+  box.innerHTML = "";
+
+  question.options.forEach(function (option, index) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice";
+    button.textContent = option;
+
+    button.onclick = function () {
+      answerCheckpoint(index, button, question);
+    };
+
+    box.appendChild(button);
+  });
+}
+
+function answerCheckpoint(choice, button, question) {
+  if (state.checkpointCorrect) return;
+
+  const box = button.parentElement;
+  const isCorrect = choice === question.correct;
+  const feedback = document.getElementById("vqFeedback");
+
+  if (isCorrect) {
+    button.classList.add("correct");
+
+    Array.from(box.children).forEach(function (item) {
+      item.disabled = true;
+    });
+
+    state.checkpointCorrect = true;
+
+    feedback.textContent = "Correct. " + question.why;
+    feedback.className = "feedback ok";
+
+    document.getElementById("vqContinue").classList.remove("hidden");
+    return;
+  }
+
+  button.classList.add("wrong");
+  button.disabled = true;
+
+  // wrongFeedback is ordered according to the incorrect answer choices.
+  const feedbackIndex =
+    choice < question.correct ? choice : choice - 1;
+
+  const selectedFeedback =
+    (question.wrongFeedback &&
+      question.wrongFeedback[feedbackIndex]) ||
+    "This choice does not follow the safe practice described in the training.";
+
+  feedback.textContent =
+    "Not quite. " + selectedFeedback +
+    " Correct principle: " + question.why +
+    " Try another option.";
+
+  feedback.className = "feedback bad";
+}
+
+function continueCheckpoint() {
+  state.videoQIdx++;
+
+  if (
+    state.videoQIdx <
+    videoModules[state.videoIdx].questions.length
+  ) {
+    renderCheckpoint();
+    return;
+  }
+
+  state.videoIdx++;
+
+  if (state.videoIdx < videoModules.length) {
+    goTo("video");
+  } else {
+    goTo("posttest");
+  }
+}
+
+function renderFinal() {
+  const question = finalQuiz[state.finalIdx];
+
+  document.getElementById("finalQNum").textContent =
+    state.finalIdx + 1;
+
+  document.getElementById("finalQText").textContent =
+    question.q;
+
+  const box = document.getElementById("finalChoices");
+  box.innerHTML = "";
+
+  question.options.forEach(function (option, index) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice";
+    button.textContent = option;
+
+    button.onclick = function () {
+      answerFinal(index);
+    };
+
+    box.appendChild(button);
+  });
+}
+
+function answerFinal(choice) {
+  const question = finalQuiz[state.finalIdx];
+
+  if (choice === question.correct) {
+    state.finalScore++;
+  }
+
+  const box = document.getElementById("finalChoices");
+
+  Array.from(box.children).forEach(function (button) {
+    button.disabled = true;
+  });
+
+  window.setTimeout(function () {
+    state.finalIdx++;
+
+    if (state.finalIdx < finalQuiz.length) {
+      renderFinal();
+    } else {
+      finishAndSubmit();
+    }
+  }, 150);
+}
+
+function getRank(score) {
+  const percentage = score * 10;
+
+  if (percentage < 50) return "Rookie Under Review";
+  if (percentage < 60) return "Cyber Recruit";
+  if (percentage < 70) return "Threat Hunter";
+  if (percentage < 80) return "Cyber Sentinel";
+  if (percentage < 90) return "Cyber Guardian";
+
+  return "Cyber Overlord";
+}
+
+function fmtTime(seconds) {
+  return Math.floor(seconds / 60) + ":" +
+    String(seconds % 60).padStart(2, "0");
+}
+
+async function finishAndSubmit() {
+  const timeSeconds = Math.max(
+    1,
+    Math.round((Date.now() - state.startTime) / 1000)
+  );
+
+  const rankTitle = getRank(state.finalScore);
+  const rankNote = document.getElementById("rankNote");
+
+  document.getElementById("preScoreOut").textContent =
+    state.preScore + "/6";
+
+  document.getElementById("postScoreOut").textContent =
+    state.postScore + "/6";
+
+  document.getElementById("finalScoreOut").textContent =
+    state.finalScore + "/10";
+
+  const change = Math.round(
+    ((state.postScore / 6) - (state.preScore / 6)) * 100
+  );
+
+  document.getElementById("changeOut").textContent =
+    (change > 0 ? "+" : "") + change + " percentage points";
+
+  document.getElementById("rankTitleOut").textContent = rankTitle;
+
+  document.getElementById("rankDescription").textContent =
+    state.finalScore >= 5
+      ? "You passed the final challenge with a score of " +
+        (state.finalScore * 10) + "%."
+      : "You did not reach the 50% passing mark. Review the training and try again.";
+
+  rankNote.textContent = "Saving your results...";
+
+  goTo("results");
+
+  let saveSucceeded = false;
+
+  try {
+    const response = await fetch("/api/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: state.username,
+        preScore: state.preScore,
+        postScore: state.postScore,
+        finalScore: state.finalScore,
+        rankTitle: rankTitle,
+        timeSeconds: timeSeconds
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("The server could not save the score.");
+    }
+
+    saveSucceeded = true;
+    rankNote.textContent = "Your results were saved successfully.";
+  } catch (error) {
+    rankNote.textContent =
+      "Your scores are displayed, but saving failed. " +
+      "Please check the Render logs before retrying.";
+  }
+
+  try {
+    const response = await fetch("/api/leaderboard");
+
+    if (!response.ok) {
+      throw new Error("Leaderboard request failed.");
+    }
+
+    const board = await response.json();
+    renderLeaderboard(board, saveSucceeded);
+  } catch (error) {
+    if (saveSucceeded) {
+      rankNote.textContent =
+        "Your results were saved, but the leaderboard could not be loaded.";
+    } else {
+      rankNote.textContent +=
+        " The leaderboard could not be loaded either.";
+    }
+  }
+}
+
+function renderLeaderboard(board, saveSucceeded) {
+  const body = document.getElementById("leaderboardBody");
+  const note = document.getElementById("rankNote");
+
+  body.innerHTML = "";
+
+  if (!Array.isArray(board)) {
+    note.textContent =
+      "The leaderboard response format is not recognised.";
+    return;
+  }
+
+  if (
+    board.some(function (row) {
+      return row.final_score === undefined &&
+        row.finalScore === undefined;
+    })
+  ) {
+    note.textContent =
+      "The leaderboard format is incompatible with the final quiz score.";
+    return;
+  }
+
+  board.forEach(function (row, index) {
+    const tr = document.createElement("tr");
+
+    if (row.username === state.username) {
+      tr.classList.add("me");
+    }
+
+    const score = Number(row.final_score ?? row.finalScore);
+    const rank = row.rank_title || row.rankTitle || getRank(score);
+    const time = Number(row.time_seconds ?? row.timeSeconds ?? 0);
+
+    [
+      index + 1,
+      row.username,
+      score + "/10",
+      rank,
+      fmtTime(time)
+    ].forEach(function (value) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+
+  const position = board.findIndex(function (row) {
+    return row.username === state.username;
+  }) + 1;
+
+  if (!saveSucceeded) {
+    note.textContent =
+      "Your score was not confirmed as saved. The displayed leaderboard may not include this attempt.";
+  } else if (position > 0) {
+    note.textContent =
+      "Your current leaderboard position is #" + position + ".";
+  } else {
+    note.textContent =
+      "Your result is not yet listed on the leaderboard.";
+  }
+}
+
+function restart() {
+  state = {
+    username: null,
+    startTime: null,
+    preIdx: 0,
+    preAnswers: [],
+    preScore: 0,
+    videoIdx: 0,
+    videoQIdx: 0,
+    checkpointCorrect: false,
+    postIdx: 0,
+    postAnswers: [],
+    postScore: 0,
+    finalIdx: 0,
+    finalScore: 0
+  };
+
+  document.getElementById("usernameInput").value = "";
+  document.getElementById("agentTag").textContent = "";
+  document.getElementById("rankNote").textContent = "";
+
+  goTo("login");
+}
+
 goTo("login");
 </script>
 </body>
