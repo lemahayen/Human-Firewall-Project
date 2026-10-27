@@ -1,14 +1,17 @@
 {
-  "name": "human-firewall",
+  "name": "human-firewall-project",
   "version": "1.0.0",
   "private": true,
-  "description": "Gamified cybersecurity awareness escape room - CyT-AL3",
+  "description": "Gamified cybersecurity awareness platform for CyT-AL3",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
-  "express": "^4.19.2",
-  "sql.js": "^1.10.3",
-  "pg": "^8.16.3"
+    "express": "^4.19.2",
+    "pg": "^8.16.3"
   }
 }
