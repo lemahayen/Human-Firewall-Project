@@ -9,7 +9,7 @@
 // - Pseudonymous participant registration and consent
 // - Protected participant sessions
 // - Server-validated pre, post and final assessments
-// - Training video progress and gated checkpoints
+// - Enforced training progression and gated checkpoints
 // - Three server-validated interactive missions
 // - Individual answer and mission decision tracking
 // - Pseudonymous leaderboard
@@ -54,20 +54,26 @@ const PASS_MARK = 50;
 
 const validAssessmentTypes = new Set(['pre', 'post', 'final']);
 
-const validModules = new Set([
+const moduleOrder = [
   'password_security',
   'phishing',
   'data_handling'
-]);
+];
+
+const validModules = new Set(moduleOrder);
+
+const missionOrder = [
+  'password_breach',
+  'phishing_detective',
+  'data_guardian'
+];
 
 // ============================================================
 // ASSESSMENT QUESTION BANK
 // ============================================================
 
 const questionBank = [
-
   // PRE-TRAINING ASSESSMENT
-
   {
     id: 'PRE-01',
     type: 'pre',
@@ -83,7 +89,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'A unique password prevents a breach on one service from exposing other accounts. MFA adds another layer of protection.'
   },
-
   {
     id: 'PRE-02',
     type: 'pre',
@@ -99,7 +104,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Verify unexpected requests using a known contact method, not the contact details or links in the suspicious message.'
   },
-
   {
     id: 'PRE-03',
     type: 'pre',
@@ -115,7 +119,6 @@ const questionBank = [
     correct: 'A',
     explanation: 'Displayed link text can conceal a different destination. Use a trusted bookmark or type the official address yourself.'
   },
-
   {
     id: 'PRE-04',
     type: 'pre',
@@ -131,7 +134,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'A misdirected sensitive file is a potential data incident. Report it promptly so the organisation can contain and assess it.'
   },
-
   {
     id: 'PRE-05',
     type: 'pre',
@@ -147,7 +149,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Do not bypass physical access controls. Visitors must follow the organisation’s approved entry process.'
   },
-
   {
     id: 'PRE-06',
     type: 'pre',
@@ -165,7 +166,6 @@ const questionBank = [
   },
 
   // POST-TRAINING ASSESSMENT
-
   {
     id: 'POST-01',
     type: 'post',
@@ -181,7 +181,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Accounts are assigned to individuals. Sharing credentials or approving another person’s MFA request undermines accountability.'
   },
-
   {
     id: 'POST-02',
     type: 'post',
@@ -197,7 +196,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'Urgency and threats are common phishing tactics. Check the account through a trusted route and report the message.'
   },
-
   {
     id: 'POST-03',
     type: 'post',
@@ -213,7 +211,6 @@ const questionBank = [
     correct: 'A',
     explanation: 'Payment-detail changes require independent verification because supplier accounts and email threads can be compromised.'
   },
-
   {
     id: 'POST-04',
     type: 'post',
@@ -229,7 +226,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Use approved secure sharing controls and grant access only to the intended, verified recipient.'
   },
-
   {
     id: 'POST-05',
     type: 'post',
@@ -245,7 +241,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Tailgating bypasses physical access controls. Follow the organisation’s procedure to challenge or report it safely.'
   },
-
   {
     id: 'POST-06',
     type: 'post',
@@ -263,7 +258,6 @@ const questionBank = [
   },
 
   // FINAL ASSESSMENT
-
   {
     id: 'FINAL-01',
     type: 'final',
@@ -279,7 +273,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'A breached password should be treated as exposed. Replace it with a unique password and review account protection.'
   },
-
   {
     id: 'FINAL-02',
     type: 'final',
@@ -295,7 +288,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'A colleague’s account may be compromised. Verify unusual requests independently before opening links or entering credentials.'
   },
-
   {
     id: 'FINAL-03',
     type: 'final',
@@ -311,7 +303,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'Apply data minimisation and least privilege: provide only authorised information needed for the task.'
   },
-
   {
     id: 'FINAL-04',
     type: 'final',
@@ -327,7 +318,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'QR codes can conceal malicious destinations. Verify the source and use the known HR portal.'
   },
-
   {
     id: 'FINAL-05',
     type: 'final',
@@ -343,7 +333,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Never approve an authentication request you did not initiate or disclose MFA codes. Verify the caller independently.'
   },
-
   {
     id: 'FINAL-06',
     type: 'final',
@@ -359,7 +348,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'Unknown removable media can contain malware. Do not connect it; hand it to the appropriate security or IT team.'
   },
-
   {
     id: 'FINAL-07',
     type: 'final',
@@ -375,7 +363,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'Urgency must not override financial controls. Follow established approval and verification procedures.'
   },
-
   {
     id: 'FINAL-08',
     type: 'final',
@@ -391,7 +378,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'Prompt reporting allows the organisation to assess exposure and take appropriate containment action.'
   },
-
   {
     id: 'FINAL-09',
     type: 'final',
@@ -407,7 +393,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Shared devices increase the risk of credential exposure. Do not store personal work credentials on them.'
   },
-
   {
     id: 'FINAL-10',
     type: 'final',
@@ -425,7 +410,6 @@ const questionBank = [
   },
 
   // TRAINING CHECKPOINTS
-
   {
     id: 'CP-PASS-01',
     type: 'checkpoint',
@@ -442,7 +426,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'Use long, unique passwords and an approved password manager. Enable MFA where available.'
   },
-
   {
     id: 'CP-PASS-02',
     type: 'checkpoint',
@@ -459,7 +442,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'Reject unexpected MFA prompts and report them. Never share an MFA code or approve a sign-in you did not start.'
   },
-
   {
     id: 'CP-PHISH-01',
     type: 'checkpoint',
@@ -476,7 +458,6 @@ const questionBank = [
     correct: 'B',
     explanation: 'A misspelled or unfamiliar domain is a warning sign. Avoid the link and report it.'
   },
-
   {
     id: 'CP-PHISH-02',
     type: 'checkpoint',
@@ -493,7 +474,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'One-time codes must not be disclosed. Verify unexpected support requests independently.'
   },
-
   {
     id: 'CP-DATA-01',
     type: 'checkpoint',
@@ -510,7 +490,6 @@ const questionBank = [
     correct: 'C',
     explanation: 'Apply least privilege and data minimisation. Access should match an authorised business need.'
   },
-
   {
     id: 'CP-DATA-02',
     type: 'checkpoint',
@@ -536,7 +515,6 @@ const questionBank = [
 // ============================================================
 
 const missionBank = {
-
   password_breach: {
     id: 'password_breach',
     title: 'PASSWORD BREACH',
@@ -710,6 +688,12 @@ function publicMission(mission) {
   };
 }
 
+function createHttpError(statusCode, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
 async function withTransaction(callback) {
   const client = await pool.connect();
 
@@ -726,12 +710,142 @@ async function withTransaction(callback) {
   }
 }
 
+async function getAssessmentStatus(sessionId, type, client = pool) {
+  const result = await client.query(
+    `SELECT status
+     FROM hf_assessment_attempts
+     WHERE session_id = $1
+       AND assessment_type = $2
+       AND status = 'completed'
+     LIMIT 1`,
+    [sessionId, type]
+  );
+
+  return result.rowCount > 0;
+}
+
+async function getModuleProgress(sessionId, client = pool) {
+  const result = await client.query(
+    `SELECT module_id, video_completed, checkpoint_completed
+     FROM hf_module_progress
+     WHERE session_id = $1`,
+    [sessionId]
+  );
+
+  return result.rows;
+}
+
+async function getCompletedMissionIds(sessionId, client = pool) {
+  const result = await client.query(
+    `SELECT DISTINCT mission_id
+     FROM hf_mission_attempts
+     WHERE session_id = $1`,
+    [sessionId]
+  );
+
+  return new Set(result.rows.map(row => row.mission_id));
+}
+
+async function requirePreAssessment(sessionId, client = pool) {
+  const completed = await getAssessmentStatus(sessionId, 'pre', client);
+
+  if (!completed) {
+    throw createHttpError(
+      403,
+      'Complete the pre-training assessment before starting the training modules.'
+    );
+  }
+}
+
+async function requirePreviousModule(sessionId, moduleId, client = pool) {
+  const index = moduleOrder.indexOf(moduleId);
+
+  if (index <= 0) return;
+
+  const previousModuleId = moduleOrder[index - 1];
+
+  const result = await client.query(
+    `SELECT checkpoint_completed
+     FROM hf_module_progress
+     WHERE session_id = $1
+       AND module_id = $2`,
+    [sessionId, previousModuleId]
+  );
+
+  if (
+    result.rowCount !== 1 ||
+    result.rows[0].checkpoint_completed !== true
+  ) {
+    throw createHttpError(
+      403,
+      'Complete the previous training module and its checkpoint first.'
+    );
+  }
+}
+
+async function requireAllTrainingCompleted(sessionId, client = pool) {
+  const result = await client.query(
+    `SELECT COUNT(*)::int AS completed_count
+     FROM hf_module_progress
+     WHERE session_id = $1
+       AND checkpoint_completed = TRUE
+       AND module_id = ANY($2::varchar[])`,
+    [sessionId, moduleOrder]
+  );
+
+  if (result.rows[0].completed_count !== moduleOrder.length) {
+    throw createHttpError(
+      403,
+      'Complete all training videos and checkpoints before accessing the missions.'
+    );
+  }
+}
+
+async function requireAllMissionsCompleted(sessionId, client = pool) {
+  const result = await client.query(
+    `SELECT COUNT(DISTINCT mission_id)::int AS completed_count
+     FROM hf_mission_attempts
+     WHERE session_id = $1
+       AND mission_id = ANY($2::varchar[])`,
+    [sessionId, missionOrder]
+  );
+
+  if (result.rows[0].completed_count !== missionOrder.length) {
+    throw createHttpError(
+      403,
+      'Complete all three interactive missions before starting the post-training assessment.'
+    );
+  }
+}
+
+async function enforceAssessmentOrder(sessionId, type, client = pool) {
+  if (type === 'pre') return;
+
+  await requirePreAssessment(sessionId, client);
+
+  if (type === 'post') {
+    await requireAllTrainingCompleted(sessionId, client);
+    await requireAllMissionsCompleted(sessionId, client);
+    return;
+  }
+
+  if (type === 'final') {
+    const postCompleted = await getAssessmentStatus(sessionId, 'post', client);
+
+    if (!postCompleted) {
+      throw createHttpError(
+        403,
+        'Complete the post-training assessment before starting the final assessment.'
+      );
+    }
+  }
+}
+
 // ============================================================
 // DATABASE INITIALISATION
 // ============================================================
 
 async function initDB() {
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS hf_participants (
       participant_id UUID PRIMARY KEY,
@@ -825,10 +939,8 @@ async function initDB() {
     );
   `);
 
-  // Seed the assessment and checkpoint question bank.
-  // Existing question records are not overwritten.
+  // Seed questions without overwriting existing question records.
   for (const question of questionBank) {
-
     await pool.query(
       `INSERT INTO hf_question_bank
         (question_id, assessment_type, module_id, topic,
@@ -856,8 +968,8 @@ async function initDB() {
 // SESSION AUTHENTICATION
 // ============================================================
 
+// Write operations require an active, unexpired session.
 async function requireSession(req, res, next) {
-
   try {
     const header = req.headers.authorization || '';
 
@@ -902,7 +1014,60 @@ async function requireSession(req, res, next) {
 
     req.session = session;
     next();
+  } catch (error) {
+    next(error);
+  }
+}
 
+// Read operations allow completed sessions so participants can
+// retrieve their final session status and progress.
+async function requireSessionAccess(req, res, next) {
+  try {
+    const header = req.headers.authorization || '';
+
+    const token = header.startsWith('Bearer ')
+      ? header.slice(7).trim()
+      : '';
+
+    if (!token || token.length < 32) {
+      return res.status(401).json({
+        error: 'A valid session token is required.'
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT
+         s.session_id,
+         s.participant_id,
+         p.participant_code,
+         s.status,
+         s.expires_at
+       FROM hf_sessions s
+       JOIN hf_participants p
+         ON p.participant_id = s.participant_id
+       WHERE s.token_hash = $1`,
+      [sha256(token)]
+    );
+
+    if (result.rowCount !== 1) {
+      return res.status(401).json({ error: 'Invalid session.' });
+    }
+
+    const session = result.rows[0];
+
+    const isCompleted = session.status === 'completed';
+    const isActiveAndValid =
+      session.status === 'active' &&
+      new Date(session.expires_at) > new Date();
+
+    if (!isCompleted && !isActiveAndValid) {
+      return res.status(401).json({
+        error: 'Session is expired or inactive.'
+      });
+    }
+
+    req.session = session;
+    next();
   } catch (error) {
     next(error);
   }
@@ -913,7 +1078,6 @@ async function requireSession(req, res, next) {
 // ============================================================
 
 function handleError(error, req, res, next) {
-
   console.error('API error:', error);
 
   if (res.headersSent) {
@@ -932,7 +1096,6 @@ function handleError(error, req, res, next) {
 // ============================================================
 
 app.get('/api/health', async (req, res, next) => {
-
   try {
     await pool.query('SELECT 1');
 
@@ -941,7 +1104,6 @@ app.get('/api/health', async (req, res, next) => {
       database: 'connected',
       environment: 'development-backend'
     });
-
   } catch (error) {
     next(error);
   }
@@ -952,9 +1114,7 @@ app.get('/api/health', async (req, res, next) => {
 // ============================================================
 
 app.post('/api/v2/register', async (req, res, next) => {
-
   try {
-
     if (req.body?.consentAccepted !== true) {
       return res.status(400).json({
         error: 'Participant consent is required before registration.'
@@ -971,7 +1131,6 @@ app.post('/api/v2/register', async (req, res, next) => {
       `AGENT-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
     await withTransaction(async client => {
-
       await client.query(
         `INSERT INTO hf_participants
           (participant_id, participant_code, consent_version, consented_at)
@@ -985,7 +1144,6 @@ app.post('/api/v2/register', async (req, res, next) => {
          VALUES ($1,$2,$3,NOW() + INTERVAL '${SESSION_HOURS} hours')`,
         [sessionId, participantId, tokenHash]
       );
-
     });
 
     res.status(201).json({
@@ -995,7 +1153,6 @@ app.post('/api/v2/register', async (req, res, next) => {
       expiresInHours: SESSION_HOURS,
       consentVersion: CONSENT_VERSION
     });
-
   } catch (error) {
     next(error);
   }
@@ -1005,7 +1162,8 @@ app.post('/api/v2/register', async (req, res, next) => {
 // CURRENT SESSION
 // ============================================================
 
-app.get('/api/v2/session', requireSession, (req, res) => {
+app.get('/api/v2/session', requireSessionAccess, (req, res) => {
+  res.set('Cache-Control', 'no-store');
 
   res.json({
     sessionId: req.session.session_id,
@@ -1013,7 +1171,6 @@ app.get('/api/v2/session', requireSession, (req, res) => {
     status: req.session.status,
     expiresAt: req.session.expires_at
   });
-
 });
 
 // ============================================================
@@ -1021,9 +1178,7 @@ app.get('/api/v2/session', requireSession, (req, res) => {
 // ============================================================
 
 app.post('/api/v2/assessments/:type/start', requireSession, async (req, res, next) => {
-
   try {
-
     const type = req.params.type;
 
     if (!validAssessmentTypes.has(type)) {
@@ -1032,25 +1187,36 @@ app.post('/api/v2/assessments/:type/start', requireSession, async (req, res, nex
       });
     }
 
-    const existing = await pool.query(
-      `SELECT attempt_id, status
-       FROM hf_assessment_attempts
-       WHERE session_id = $1
-         AND assessment_type = $2
-       ORDER BY started_at DESC
-       LIMIT 1`,
-      [req.session.session_id, type]
-    );
+    const result = await withTransaction(async client => {
+      // Serialise assessment starts for this session.
+      await client.query(
+        `SELECT session_id
+         FROM hf_sessions
+         WHERE session_id = $1
+         FOR UPDATE`,
+        [req.session.session_id]
+      );
 
-    if (existing.rowCount && existing.rows[0].status === 'completed') {
-      return res.status(409).json({
-        error: 'This assessment has already been completed in this session.'
-      });
-    }
+      await enforceAssessmentOrder(req.session.session_id, type, client);
 
-    if (existing.rowCount && existing.rows[0].status === 'in_progress') {
+      const existing = await client.query(
+        `SELECT attempt_id, status
+         FROM hf_assessment_attempts
+         WHERE session_id = $1
+           AND assessment_type = $2
+         ORDER BY started_at DESC
+         LIMIT 1`,
+        [req.session.session_id, type]
+      );
 
-      const questions = await pool.query(
+      if (existing.rowCount && existing.rows[0].status === 'completed') {
+        throw createHttpError(
+          409,
+          'This assessment has already been completed in this session.'
+        );
+      }
+
+      const questions = await client.query(
         `SELECT question_id, topic, difficulty, prompt, options
          FROM hf_question_bank
          WHERE assessment_type = $1
@@ -1059,51 +1225,51 @@ app.post('/api/v2/assessments/:type/start', requireSession, async (req, res, nex
         [type]
       );
 
-      return res.json({
-        attemptId: existing.rows[0].attempt_id,
+      const expectedCount = type === 'final' ? 10 : 6;
+
+      if (questions.rowCount !== expectedCount) {
+        throw createHttpError(
+          500,
+          'The configured question bank has an unexpected question count.'
+        );
+      }
+
+      if (existing.rowCount && existing.rows[0].status === 'in_progress') {
+        return {
+          statusCode: 200,
+          attemptId: existing.rows[0].attempt_id,
+          assessmentType: type,
+          questions: questions.rows.map(publicQuestion)
+        };
+      }
+
+      const attemptId = crypto.randomUUID();
+
+      await client.query(
+        `INSERT INTO hf_assessment_attempts
+          (attempt_id, session_id, assessment_type, question_count)
+         VALUES ($1,$2,$3,$4)`,
+        [
+          attemptId,
+          req.session.session_id,
+          type,
+          questions.rowCount
+        ]
+      );
+
+      return {
+        statusCode: 201,
+        attemptId,
         assessmentType: type,
         questions: questions.rows.map(publicQuestion)
-      });
-    }
-
-    const questions = await pool.query(
-      `SELECT question_id, topic, difficulty, prompt, options
-       FROM hf_question_bank
-       WHERE assessment_type = $1
-         AND active = TRUE
-       ORDER BY question_id`,
-      [type]
-    );
-
-    const expectedCount = type === 'final' ? 10 : 6;
-
-    if (questions.rowCount !== expectedCount) {
-      return res.status(500).json({
-        error: 'The configured question bank has an unexpected question count.'
-      });
-    }
-
-    const attemptId = crypto.randomUUID();
-
-    await pool.query(
-      `INSERT INTO hf_assessment_attempts
-        (attempt_id, session_id, assessment_type, question_count)
-       VALUES ($1,$2,$3,$4)`,
-      [
-        attemptId,
-        req.session.session_id,
-        type,
-        questions.rowCount
-      ]
-    );
-
-    res.status(201).json({
-      attemptId,
-      assessmentType: type,
-      questions: questions.rows.map(publicQuestion)
+      };
     });
 
+    res.status(result.statusCode).json(result);
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     next(error);
   }
 });
@@ -1114,9 +1280,7 @@ app.post('/api/v2/assessments/:type/start', requireSession, async (req, res, nex
 // ============================================================
 
 app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, next) => {
-
   try {
-
     const type = req.params.type;
     const { attemptId, answers } = req.body || {};
 
@@ -1131,7 +1295,6 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
     }
 
     const result = await withTransaction(async client => {
-
       const attemptResult = await client.query(
         `SELECT *
          FROM hf_assessment_attempts
@@ -1146,11 +1309,10 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
         attemptResult.rowCount !== 1 ||
         attemptResult.rows[0].status !== 'in_progress'
       ) {
-        const error = new Error(
+        throw createHttpError(
+          409,
           'Assessment attempt is invalid or already submitted.'
         );
-        error.statusCode = 409;
-        throw error;
       }
 
       const questionResult = await client.query(
@@ -1161,34 +1323,35 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
         [type]
       );
 
-      if (answers.length !== questionResult.rowCount) {
-        const error = new Error(
+      if (
+        questionResult.rowCount !== attemptResult.rows[0].question_count ||
+        answers.length !== questionResult.rowCount
+      ) {
+        throw createHttpError(
+          400,
           'Submit an answer for every question exactly once.'
         );
-        error.statusCode = 400;
-        throw error;
       }
 
       const answerMap = new Map();
 
       for (const answer of answers) {
-
         if (
           !answer ||
           typeof answer.questionId !== 'string' ||
           typeof answer.selectedOption !== 'string'
         ) {
-          const error = new Error(
+          throw createHttpError(
+            400,
             'Each answer must include questionId and selectedOption.'
           );
-          error.statusCode = 400;
-          throw error;
         }
 
         if (answerMap.has(answer.questionId)) {
-          const error = new Error('Duplicate question answers are not allowed.');
-          error.statusCode = 400;
-          throw error;
+          throw createHttpError(
+            400,
+            'Duplicate question answers are not allowed.'
+          );
         }
 
         answerMap.set(answer.questionId, answer.selectedOption);
@@ -1202,28 +1365,24 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
         answerMap.size !== validIds.size ||
         [...answerMap.keys()].some(id => !validIds.has(id))
       ) {
-        const error = new Error(
+        throw createHttpError(
+          400,
           'The submitted question set does not match this assessment.'
         );
-        error.statusCode = 400;
-        throw error;
       }
 
       let score = 0;
       const topicTotals = {};
 
       for (const question of questionResult.rows) {
-
         const selected = answerMap.get(question.question_id);
-
         const optionIds = question.options.map(option => option.id);
 
         if (!optionIds.includes(selected)) {
-          const error = new Error(
+          throw createHttpError(
+            400,
             `Invalid option submitted for ${question.question_id}.`
           );
-          error.statusCode = 400;
-          throw error;
         }
 
         const correct = selected === question.correct_option;
@@ -1257,10 +1416,7 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
       }
 
       const total = questionResult.rowCount;
-
-      const percentage = Number(
-        ((score / total) * 100).toFixed(2)
-      );
+      const percentage = Number(((score / total) * 100).toFixed(2));
 
       const rank = type === 'final'
         ? rankTitle(percentage)
@@ -1269,10 +1425,7 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
       const elapsed = Math.max(
         0,
         Math.floor(
-          (
-            Date.now() -
-            new Date(attemptResult.rows[0].started_at).getTime()
-          ) / 1000
+          (Date.now() - new Date(attemptResult.rows[0].started_at).getTime()) / 1000
         )
       );
 
@@ -1309,19 +1462,15 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
         timeSeconds: elapsed,
         topicBreakdown: topicTotals
       };
-
     });
 
     res.json(result);
-
   } catch (error) {
-
     if (error.statusCode) {
       return res.status(error.statusCode).json({
         error: error.message
       });
     }
-
     next(error);
   }
 });
@@ -1331,9 +1480,7 @@ app.post('/api/v2/assessments/:type/submit', requireSession, async (req, res, ne
 // ============================================================
 
 app.get('/api/v2/modules/:moduleId/checkpoints', requireSession, async (req, res, next) => {
-
   try {
-
     const moduleId = req.params.moduleId;
 
     if (!validModules.has(moduleId)) {
@@ -1342,8 +1489,11 @@ app.get('/api/v2/modules/:moduleId/checkpoints', requireSession, async (req, res
       });
     }
 
+    await requirePreAssessment(req.session.session_id);
+    await requirePreviousModule(req.session.session_id, moduleId);
+
     const progress = await pool.query(
-      `SELECT video_completed
+      `SELECT video_completed, checkpoint_completed
        FROM hf_module_progress
        WHERE session_id = $1
          AND module_id = $2`,
@@ -1375,12 +1525,16 @@ app.get('/api/v2/modules/:moduleId/checkpoints', requireSession, async (req, res
       });
     }
 
+    res.set('Cache-Control', 'no-store');
+
     res.json({
       moduleId,
       questions: result.rows.map(publicQuestion)
     });
-
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     next(error);
   }
 });
@@ -1390,9 +1544,7 @@ app.get('/api/v2/modules/:moduleId/checkpoints', requireSession, async (req, res
 // ============================================================
 
 app.post('/api/v2/modules/:moduleId/checkpoints/:questionId/answer', requireSession, async (req, res, next) => {
-
   try {
-
     const { moduleId, questionId } = req.params;
     const { selectedOption } = req.body || {};
 
@@ -1405,110 +1557,125 @@ app.post('/api/v2/modules/:moduleId/checkpoints/:questionId/answer', requireSess
       });
     }
 
-    const progress = await pool.query(
-      `SELECT video_completed
-       FROM hf_module_progress
-       WHERE session_id = $1
-         AND module_id = $2`,
-      [req.session.session_id, moduleId]
-    );
+    const result = await withTransaction(async client => {
+      await requirePreAssessment(req.session.session_id, client);
+      await requirePreviousModule(req.session.session_id, moduleId, client);
 
-    if (
-      progress.rowCount !== 1 ||
-      progress.rows[0].video_completed !== true
-    ) {
-      return res.status(403).json({
-        error: 'Complete the training video before answering its checkpoint.'
-      });
-    }
+      // Serialise attempts for the same participant and checkpoint.
+      await client.query(
+        'SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))',
+        [req.session.session_id, questionId]
+      );
 
-    const questionResult = await pool.query(
-      `SELECT question_id, options, correct_option, explanation
-       FROM hf_question_bank
-       WHERE question_id = $1
-         AND assessment_type = 'checkpoint'
-         AND module_id = $2
-         AND active = TRUE`,
-      [questionId, moduleId]
-    );
+      const progress = await client.query(
+        `SELECT video_completed, checkpoint_completed
+         FROM hf_module_progress
+         WHERE session_id = $1
+           AND module_id = $2
+         FOR UPDATE`,
+        [req.session.session_id, moduleId]
+      );
 
-    if (questionResult.rowCount !== 1) {
-      return res.status(404).json({
-        error: 'Checkpoint question not found.'
-      });
-    }
+      if (
+        progress.rowCount !== 1 ||
+        progress.rows[0].video_completed !== true
+      ) {
+        throw createHttpError(
+          403,
+          'Complete the training video before answering its checkpoint.'
+        );
+      }
 
-    const question = questionResult.rows[0];
+      const questionResult = await client.query(
+        `SELECT question_id, options, correct_option, explanation
+         FROM hf_question_bank
+         WHERE question_id = $1
+           AND assessment_type = 'checkpoint'
+           AND module_id = $2
+           AND active = TRUE`,
+        [questionId, moduleId]
+      );
 
-    if (!question.options.some(option => option.id === selectedOption)) {
-      return res.status(400).json({
-        error: 'Invalid answer option.'
-      });
-    }
+      if (questionResult.rowCount !== 1) {
+        throw createHttpError(404, 'Checkpoint question not found.');
+      }
 
-    const attemptNumberResult = await pool.query(
-      `SELECT COUNT(*)::int AS attempts
-       FROM hf_checkpoint_responses
-       WHERE session_id = $1
-         AND question_id = $2`,
-      [req.session.session_id, questionId]
-    );
+      const question = questionResult.rows[0];
 
-    const isCorrect = selectedOption === question.correct_option;
+      if (!question.options.some(option => option.id === selectedOption)) {
+        throw createHttpError(400, 'Invalid answer option.');
+      }
 
-    await pool.query(
-      `INSERT INTO hf_checkpoint_responses
-        (session_id, question_id, selected_option, is_correct, attempt_number)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [
-        req.session.session_id,
+      const attemptNumberResult = await client.query(
+        `SELECT COUNT(*)::int AS attempts
+         FROM hf_checkpoint_responses
+         WHERE session_id = $1
+           AND question_id = $2`,
+        [req.session.session_id, questionId]
+      );
+
+      const isCorrect = selectedOption === question.correct_option;
+
+      await client.query(
+        `INSERT INTO hf_checkpoint_responses
+          (session_id, question_id, selected_option, is_correct, attempt_number)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [
+          req.session.session_id,
+          questionId,
+          selectedOption,
+          isCorrect,
+          attemptNumberResult.rows[0].attempts + 1
+        ]
+      );
+
+      const correctCountResult = await client.query(
+        `SELECT COUNT(DISTINCT question_id)::int AS correct_count
+         FROM hf_checkpoint_responses
+         WHERE session_id = $1
+           AND is_correct = TRUE
+           AND question_id IN (
+             SELECT question_id
+             FROM hf_question_bank
+             WHERE assessment_type = 'checkpoint'
+               AND module_id = $2
+               AND active = TRUE
+           )`,
+        [req.session.session_id, moduleId]
+      );
+
+      const checkpointCompleted =
+        correctCountResult.rows[0].correct_count >= 2;
+
+      await client.query(
+        `INSERT INTO hf_module_progress
+          (session_id, module_id, checkpoint_completed)
+         VALUES ($1,$2,$3)
+         ON CONFLICT (session_id, module_id)
+         DO UPDATE SET
+           checkpoint_completed =
+             hf_module_progress.checkpoint_completed OR EXCLUDED.checkpoint_completed,
+           updated_at = NOW()`,
+        [
+          req.session.session_id,
+          moduleId,
+          checkpointCompleted
+        ]
+      );
+
+      return {
         questionId,
-        selectedOption,
-        isCorrect,
-        attemptNumberResult.rows[0].attempts + 1
-      ]
-    );
-
-    const correctCountResult = await pool.query(
-      `SELECT COUNT(DISTINCT question_id)::int AS correct_count
-       FROM hf_checkpoint_responses
-       WHERE session_id = $1
-         AND is_correct = TRUE
-         AND question_id IN (
-           SELECT question_id
-           FROM hf_question_bank
-           WHERE assessment_type = 'checkpoint'
-             AND module_id = $2
-         )`,
-      [req.session.session_id, moduleId]
-    );
-
-    const checkpointCompleted =
-      correctCountResult.rows[0].correct_count >= 2;
-
-    await pool.query(
-      `INSERT INTO hf_module_progress
-        (session_id, module_id, checkpoint_completed)
-       VALUES ($1,$2,$3)
-       ON CONFLICT (session_id, module_id)
-       DO UPDATE SET
-         checkpoint_completed = EXCLUDED.checkpoint_completed,
-         updated_at = NOW()`,
-      [
-        req.session.session_id,
-        moduleId,
+        correct: isCorrect,
+        explanation: question.explanation,
         checkpointCompleted
-      ]
-    );
-
-    res.json({
-      questionId,
-      correct: isCorrect,
-      explanation: question.explanation,
-      checkpointCompleted
+      };
     });
 
+    res.json(result);
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     next(error);
   }
 });
@@ -1522,9 +1689,7 @@ app.post('/api/v2/modules/:moduleId/checkpoints/:questionId/answer', requireSess
 // ============================================================
 
 app.post('/api/v2/modules/:moduleId/video-complete', requireSession, async (req, res, next) => {
-
   try {
-
     const moduleId = req.params.moduleId;
 
     if (!validModules.has(moduleId)) {
@@ -1532,6 +1697,9 @@ app.post('/api/v2/modules/:moduleId/video-complete', requireSession, async (req,
         error: 'Unknown training module.'
       });
     }
+
+    await requirePreAssessment(req.session.session_id);
+    await requirePreviousModule(req.session.session_id, moduleId);
 
     await pool.query(
       `INSERT INTO hf_module_progress
@@ -1551,32 +1719,26 @@ app.post('/api/v2/modules/:moduleId/video-complete', requireSession, async (req,
       moduleId,
       videoCompleted: true
     });
-
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     next(error);
   }
 });
 
 // ============================================================
 // MISSION LIST
-//
-// Returns public mission content only.
-// Correct options and explanations remain on the server.
+// Missions are available only after all training checkpoints.
 // ============================================================
 
 app.get('/api/v2/missions', requireSession, async (req, res, next) => {
-
   try {
+    await requirePreAssessment(req.session.session_id);
+    await requireAllTrainingCompleted(req.session.session_id);
 
-    const completedResult = await pool.query(
-      `SELECT mission_id
-       FROM hf_mission_attempts
-       WHERE session_id = $1`,
-      [req.session.session_id]
-    );
-
-    const completedMissions = new Set(
-      completedResult.rows.map(row => row.mission_id)
+    const completedMissions = await getCompletedMissionIds(
+      req.session.session_id
     );
 
     const missions = Object.values(missionBank).map(mission => ({
@@ -1585,10 +1747,11 @@ app.get('/api/v2/missions', requireSession, async (req, res, next) => {
     }));
 
     res.set('Cache-Control', 'no-store');
-
     res.json({ missions });
-
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     next(error);
   }
 });
@@ -1596,15 +1759,13 @@ app.get('/api/v2/missions', requireSession, async (req, res, next) => {
 // ============================================================
 // MISSION SUBMISSION
 //
-// The server validates every decision and calculates the score.
-// The client cannot submit its own score.
-// One completed attempt is allowed per mission per session.
+// Server validates every decision and calculates the score.
+// A transaction-level advisory lock prevents concurrent
+// duplicate submissions for the same session and mission.
 // ============================================================
 
 app.post('/api/v2/missions/:missionId/submit', requireSession, async (req, res, next) => {
-
   try {
-
     const missionId = req.params.missionId;
     const { decisions } = req.body || {};
 
@@ -1616,7 +1777,10 @@ app.post('/api/v2/missions/:missionId/submit', requireSession, async (req, res, 
       });
     }
 
-    if (!Array.isArray(decisions) || decisions.length !== mission.decisions.length) {
+    if (
+      !Array.isArray(decisions) ||
+      decisions.length !== mission.decisions.length
+    ) {
       return res.status(400).json({
         error: 'Submit a decision for every mission scenario.'
       });
@@ -1625,7 +1789,6 @@ app.post('/api/v2/missions/:missionId/submit', requireSession, async (req, res, 
     const submittedMap = new Map();
 
     for (const decision of decisions) {
-
       if (
         !decision ||
         typeof decision.decisionId !== 'string' ||
@@ -1642,10 +1805,7 @@ app.post('/api/v2/missions/:missionId/submit', requireSession, async (req, res, 
         });
       }
 
-      submittedMap.set(
-        decision.decisionId,
-        decision.selectedOption
-      );
+      submittedMap.set(decision.decisionId, decision.selectedOption);
     }
 
     const validDecisionIds = new Set(
@@ -1666,9 +1826,7 @@ app.post('/api/v2/missions/:missionId/submit', requireSession, async (req, res, 
     const feedback = [];
 
     for (const scenario of mission.decisions) {
-
       const selected = submittedMap.get(scenario.id);
-
       const validOptions = scenario.options.map(option => option.id);
 
       if (!validOptions.includes(selected)) {
@@ -1698,26 +1856,29 @@ app.post('/api/v2/missions/:missionId/submit', requireSession, async (req, res, 
     const percentage = Math.round((score / total) * 100);
 
     const result = await withTransaction(async client => {
+      await requirePreAssessment(req.session.session_id, client);
+      await requireAllTrainingCompleted(req.session.session_id, client);
+
+      // Prevent two simultaneous submissions from both succeeding.
+      await client.query(
+        'SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))',
+        [req.session.session_id, missionId]
+      );
 
       const existing = await client.query(
         `SELECT mission_attempt_id
          FROM hf_mission_attempts
          WHERE session_id = $1
            AND mission_id = $2
-         LIMIT 1
-         FOR UPDATE`,
-        [
-          req.session.session_id,
-          missionId
-        ]
+         LIMIT 1`,
+        [req.session.session_id, missionId]
       );
 
       if (existing.rowCount > 0) {
-        const error = new Error(
+        throw createHttpError(
+          409,
           'This mission has already been completed in this session.'
         );
-        error.statusCode = 409;
-        throw error;
       }
 
       const inserted = await client.query(
@@ -1746,27 +1907,23 @@ app.post('/api/v2/missions/:missionId/submit', requireSession, async (req, res, 
       feedback,
       completedAt: result.completed_at
     });
-
   } catch (error) {
-
     if (error.statusCode) {
       return res.status(error.statusCode).json({
         error: error.message
       });
     }
-
     next(error);
   }
 });
 
 // ============================================================
 // PARTICIPANT PROGRESS
+// Read access remains available after final completion.
 // ============================================================
 
-app.get('/api/v2/progress', requireSession, async (req, res, next) => {
-
+app.get('/api/v2/progress', requireSessionAccess, async (req, res, next) => {
   try {
-
     const modules = await pool.query(
       `SELECT
          module_id,
@@ -1804,12 +1961,13 @@ app.get('/api/v2/progress', requireSession, async (req, res, next) => {
       [req.session.session_id]
     );
 
+    res.set('Cache-Control', 'no-store');
+
     res.json({
       modules: modules.rows,
       assessments: assessments.rows,
       missions: missions.rows
     });
-
   } catch (error) {
     next(error);
   }
@@ -1820,9 +1978,7 @@ app.get('/api/v2/progress', requireSession, async (req, res, next) => {
 // ============================================================
 
 app.get('/api/leaderboard', async (req, res, next) => {
-
   try {
-
     const result = await pool.query(
       `SELECT
          p.participant_code AS username,
@@ -1846,7 +2002,6 @@ app.get('/api/leaderboard', async (req, res, next) => {
 
     res.set('Cache-Control', 'no-store');
     res.json(result.rows);
-
   } catch (error) {
     next(error);
   }
@@ -1857,27 +2012,21 @@ app.get('/api/leaderboard', async (req, res, next) => {
 // ============================================================
 
 app.post('/api/login', (req, res) => {
-
   res.status(410).json({
     error: 'Legacy registration is disabled. Use /api/v2/register.'
   });
-
 });
 
 app.post('/api/submit', (req, res) => {
-
   res.status(410).json({
     error: 'Client-calculated score submission is disabled. Use the v2 assessment endpoints.'
   });
-
 });
 
 app.get('/api/reset-leaderboard', (req, res) => {
-
   res.status(404).json({
     error: 'Not found.'
   });
-
 });
 
 // ============================================================
@@ -1891,9 +2040,7 @@ app.use(handleError);
 // ============================================================
 
 async function start() {
-
   try {
-
     await initDB();
 
     app.listen(PORT, () => {
@@ -1901,9 +2048,7 @@ async function start() {
         `Human Firewall development server running on port ${PORT}`
       );
     });
-
   } catch (error) {
-
     console.error(
       'Failed to initialise Human Firewall database:',
       error
@@ -1918,10 +2063,8 @@ async function start() {
 // ============================================================
 
 process.on('SIGTERM', async () => {
-
   await pool.end();
   process.exit(0);
-
 });
 
 start();
