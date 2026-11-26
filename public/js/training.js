@@ -1,22 +1,22 @@
 
 /* ============================================================
    HUMAN FIREWALL
-   Training module
+   Training module controller
 
-   Modules:
+   Three mandatory modules:
    1. Password Security
-   2. Phishing and Suspicious Links
+   2. Phishing Detective
    3. Safe Data Handling
 
    Each module requires:
-   - Video completion
+   - Full video playback until the YouTube ENDED event
    - Two correctly answered checkpoint questions
+   - Server-recorded completion
 
    IMPORTANT:
-   The backend validates checkpoint answers.
-   Video completion is still a client-reported event and
-   cannot independently prove that a participant watched
-   the entire video.
+   Video completion is client-reported. The YouTube player
+   event improves progression control but is not independent
+   proof of participant attention.
 ============================================================ */
 
 'use strict';
@@ -27,162 +27,219 @@ const Training = (() => {
     {
       id: 'password_security',
       title: 'PASSWORD SECURITY',
-      subtitle: 'Protecting access and digital identities',
       description:
-        'Learn how weak, reused and compromised passwords expose organisational systems.',
+        'Protect workplace accounts using strong, unique passwords and additional authentication controls.',
+      learningPoints:
+        '• Use long, unique passwords for every account.\n' +
+        '• Never reuse workplace passwords on personal services.\n' +
+        '• Use an approved password manager where available.\n' +
+        '• Enable multi-factor authentication (MFA).\n' +
+        '• Report suspected credential compromise immediately.',
       videoId: 'gJdylzi6lHw'
     },
     {
       id: 'phishing',
       title: 'PHISHING DETECTIVE',
-      subtitle: 'Recognising suspicious messages and links',
       description:
-        'Learn how to recognise phishing attempts, suspicious links and social engineering techniques.',
+        'Recognise phishing attempts, suspicious links, malicious attachments and social engineering techniques.',
+      learningPoints:
+        '• Check the sender address, not just the display name.\n' +
+        '• Inspect unexpected links before opening them.\n' +
+        '• Be cautious of urgent requests and unusual payment instructions.\n' +
+        '• Never enter credentials through an unexpected email link.\n' +
+        '• Report suspicious messages using your organisation’s approved process.',
       videoId: 'Kqj3f5uAgKE'
     },
     {
       id: 'data_handling',
       title: 'SAFE DATA HANDLING',
-      subtitle: 'Protecting confidential information',
       description:
-        'Learn how to handle, store and share organisational information safely.',
+        'Handle, store and share organisational information safely and responsibly.',
+      learningPoints:
+        '• Share information only with authorised recipients.\n' +
+        '• Verify recipients before sending sensitive attachments.\n' +
+        '• Use approved storage and file-sharing services.\n' +
+        '• Lock your workstation when leaving it unattended.\n' +
+        '• Report accidental disclosure immediately.',
       videoId: 'hsNRrEnB_aM'
     }
   ];
 
   let currentModuleIndex = 0;
   let currentModule = null;
+  let player = null;
+  let videoEnded = false;
+  let videoCompleted = false;
+  let completionRequestSent = false;
+  let checkpointCompleted = false;
+  let checkpointAwaitingNext = false;
   let checkpoints = [];
   let currentCheckpointIndex = 0;
-  let videoCompleted = false;
-  let checkpointCompleted = false;
-  let player = null;
-  let playerReady = false;
-  let completionRequestSent = false;
-  let initialized = false;
+  let submittingCheckpoint = false;
+  let moduleComplete = false;
+
+  const completedModules = new Set();
+  const awardedModules = new Set();
 
   function $(id) {
     return document.getElementById(id);
   }
 
-  function showMessage(message, type = 'info') {
-    const element = $('training-feedback');
-
-    if (!element) {
-      console.log(message);
-      return;
+  function showStatus(message, type = 'info') {
+    if (window.App && typeof App.showMessage === 'function') {
+      App.showMessage(message, type, 'app-message');
     }
-
-    element.textContent = message;
-    element.className = `feedback ${type}`;
-    element.classList.remove('hidden');
   }
 
-  function clearMessage() {
-    const element = $('training-feedback');
+  function showCheckpointFeedback(message, type = 'info') {
+    const target = $('training-checkpoint-feedback');
+    if (!target) return;
 
-    if (!element) return;
-
-    element.textContent = '';
-    element.className = 'feedback hidden';
+    target.textContent = message;
+    target.className = `feedback ${type}`;
+    target.classList.remove('hidden');
   }
 
-  function setText(id, value) {
-    const element = $(id);
-    if (element) element.textContent = value;
+  function clearCheckpointFeedback() {
+    const target = $('training-checkpoint-feedback');
+    if (!target) return;
+
+    target.textContent = '';
+    target.className = 'feedback hidden';
   }
 
   function showElement(id) {
-    const element = $(id);
-    if (element) element.classList.remove('hidden');
+    const target = $(id);
+    if (target) target.classList.remove('hidden');
   }
 
   function hideElement(id) {
-    const element = $(id);
-    if (element) element.classList.add('hidden');
+    const target = $(id);
+    if (target) target.classList.add('hidden');
   }
 
-  function getModuleIndex(moduleId) {
-    return MODULES.findIndex(module => module.id === moduleId);
+  function setText(id, value) {
+    const target = $(id);
+    if (target) target.textContent = value;
+  }
+
+  function updateModuleProgress() {
+    setText(
+      'training-module-progress',
+      `${completedModules.size} / ${MODULES.length}`
+    );
+  }
+
+  function getVideoContainer() {
+    const iframe = $('training-video');
+    return iframe
+      ? iframe.closest('.video-container')
+      : document.querySelector('.video-container');
+  }
+
+  function setVideoVisible(visible) {
+    const container = getVideoContainer();
+    const button = $('training-complete-button');
+
+    if (container) {
+      container.classList.toggle('hidden', !visible);
+    }
+
+    if (button) {
+      button.classList.toggle('hidden', !visible && !moduleComplete);
+    }
   }
 
   function loadYouTubeAPI() {
-    return new Promise((resolve, reject) => {
+    if (window.YT && window.YT.Player) {
+      return Promise.resolve();
+    }
 
-      if (window.YT && window.YT.Player) {
-        resolve();
-        return;
-      }
+    if (window.__humanFirewallYouTubePromise) {
+      return window.__humanFirewallYouTubePromise;
+    }
 
-      if (window.youtubeApiPromise) {
-        window.youtubeApiPromise.then(resolve).catch(reject);
-        return;
-      }
-
-      window.youtubeApiPromise = new Promise((apiResolve, apiReject) => {
-
+    window.__humanFirewallYouTubePromise = new Promise(
+      (resolve, reject) => {
         const previousCallback = window.onYouTubeIframeAPIReady;
 
         window.onYouTubeIframeAPIReady = () => {
           if (typeof previousCallback === 'function') {
-            previousCallback();
+            try {
+              previousCallback();
+            } catch (error) {
+              console.warn('Previous YouTube callback failed:', error);
+            }
           }
 
           if (window.YT && window.YT.Player) {
-            apiResolve();
+            resolve();
           } else {
-            apiReject(new Error('YouTube player API failed to initialise.'));
+            reject(new Error('YouTube player API failed to initialise.'));
           }
         };
 
-        const existingScript = document.querySelector(
+        let script = document.querySelector(
           'script[src="https://www.youtube.com/iframe_api"]'
         );
 
-        if (!existingScript) {
-          const script = document.createElement('script');
+        if (!script) {
+          script = document.createElement('script');
           script.src = 'https://www.youtube.com/iframe_api';
           script.async = true;
+
           script.onerror = () => {
-            apiReject(new Error('Unable to load the YouTube player API.'));
+            reject(new Error('Unable to load the YouTube player API.'));
           };
 
           document.head.appendChild(script);
         }
+      }
+    );
 
-      });
-
-      window.youtubeApiPromise.then(resolve).catch(reject);
-    });
+    return window.__humanFirewallYouTubePromise;
   }
 
-  async function createPlayer(module) {
-    const container = $('training-video');
+  function createVideoFrame() {
+    const container = getVideoContainer();
 
     if (!container) {
       throw new Error('The training video container is missing.');
     }
 
+    container.replaceChildren();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'training-video';
+    iframe.title = 'Cybersecurity training video';
+    iframe.allow =
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.allowFullscreen = true;
+    iframe.loading = 'lazy';
+
+    container.appendChild(iframe);
+
+    return iframe;
+  }
+
+  async function createPlayer(module) {
     if (player && typeof player.destroy === 'function') {
       try {
         player.destroy();
       } catch (error) {
-        console.warn('Unable to destroy previous player:', error);
+        console.warn('Unable to destroy previous video player:', error);
       }
     }
 
     player = null;
-    playerReady = false;
-    completionRequestSent = false;
 
-    container.innerHTML = '<div id="youtube-player"></div>';
+    createVideoFrame();
 
     await loadYouTubeAPI();
 
     return new Promise((resolve, reject) => {
-
       try {
-        player = new YT.Player('youtube-player', {
+        player = new window.YT.Player('training-video', {
           width: '100%',
           height: '390',
           videoId: module.videoId,
@@ -195,31 +252,26 @@ const Training = (() => {
 
           events: {
             onReady: () => {
-              playerReady = true;
               resolve();
             },
 
             onStateChange: event => {
               if (
-                event.data === YT.PlayerState.ENDED &&
-                !completionRequestSent
+                event.data === window.YT.PlayerState.ENDED
               ) {
                 handleVideoEnded();
               }
             },
 
             onError: event => {
-              showMessage(
-                `The training video could not be played. YouTube error: ${event.data}.`,
-                'error'
-              );
-              reject(
-                new Error(`YouTube player error ${event.data}.`)
-              );
+              const message =
+                `The video could not be played. YouTube error ${event.data}.`;
+
+              showStatus(message, 'error');
+              reject(new Error(message));
             }
           }
         });
-
       } catch (error) {
         reject(error);
       }
@@ -227,13 +279,27 @@ const Training = (() => {
   }
 
   async function handleVideoEnded() {
-    if (completionRequestSent || !currentModule) return;
+    if (
+      !currentModule ||
+      videoCompleted ||
+      completionRequestSent
+    ) {
+      return;
+    }
 
+    videoEnded = true;
     completionRequestSent = true;
 
+    const button = $('training-complete-button');
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'RECORDING COMPLETION...';
+    }
+
     try {
-      showMessage(
-        'Video completed. Recording your training progress...',
+      showStatus(
+        'Video finished. Recording your training progress...',
         'info'
       );
 
@@ -241,8 +307,8 @@ const Training = (() => {
 
       videoCompleted = true;
 
-      showMessage(
-        'Video completion recorded. You can now attempt the checkpoint questions.',
+      showStatus(
+        'Video completion recorded. Complete both checkpoint questions to unlock the next module.',
         'success'
       );
 
@@ -251,10 +317,15 @@ const Training = (() => {
     } catch (error) {
       completionRequestSent = false;
 
-      showMessage(
-        `${error.message} Please try recording completion again.`,
+      showStatus(
+        `${error.message} Please retry recording your video completion.`,
         'error'
       );
+
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'RETRY VIDEO COMPLETION';
+      }
     }
   }
 
@@ -269,30 +340,37 @@ const Training = (() => {
         !Array.isArray(response.questions) ||
         response.questions.length !== 2
       ) {
-        throw new Error('The server did not return the expected two checkpoint questions.');
+        throw new Error(
+          'The server did not return the expected two checkpoint questions.'
+        );
+      }
+
+      for (const question of response.questions) {
+        if (
+          typeof question.questionId !== 'string' ||
+          typeof question.prompt !== 'string' ||
+          !Array.isArray(question.options)
+        ) {
+          throw new Error('The server returned an invalid checkpoint question.');
+        }
       }
 
       checkpoints = response.questions;
       currentCheckpointIndex = 0;
+      checkpointAwaitingNext = false;
 
-      hideElement('training-video-section');
-      showElement('training-checkpoint-section');
+      setVideoVisible(false);
+      hideElement('training-complete-button');
+      showElement('training-checkpoint');
 
       renderCheckpoint();
 
     } catch (error) {
-      showMessage(error.message, 'error');
+      showStatus(error.message, 'error');
     }
   }
 
   function renderCheckpoint() {
-    const container = $('training-checkpoint');
-
-    if (!container) {
-      showMessage('The checkpoint question container is missing.', 'error');
-      return;
-    }
-
     if (currentCheckpointIndex >= checkpoints.length) {
       finishModule();
       return;
@@ -300,30 +378,21 @@ const Training = (() => {
 
     const question = checkpoints[currentCheckpointIndex];
 
-    if (
-      !question ||
-      !question.questionId ||
-      !Array.isArray(question.options)
-    ) {
-      showMessage('Invalid checkpoint question received from the server.', 'error');
+    setText(
+      'training-checkpoint-question',
+      `CHECKPOINT ${currentCheckpointIndex + 1} OF ${checkpoints.length}: ${question.prompt}`
+    );
+
+    const optionsContainer = $('training-checkpoint-options');
+
+    if (!optionsContainer) {
+      showStatus('The checkpoint options container is missing.', 'error');
       return;
     }
 
-    container.replaceChildren();
-
-    const heading = document.createElement('h3');
-    heading.textContent =
-      `CHECKPOINT ${currentCheckpointIndex + 1} OF ${checkpoints.length}`;
-
-    const prompt = document.createElement('p');
-    prompt.className = 'question-prompt';
-    prompt.textContent = question.prompt;
-
-    const options = document.createElement('div');
-    options.className = 'options-list';
+    optionsContainer.replaceChildren();
 
     question.options.forEach(option => {
-
       const label = document.createElement('label');
       label.className = 'option';
 
@@ -336,32 +405,42 @@ const Training = (() => {
       text.textContent = `${option.id}. ${option.text}`;
 
       label.append(radio, text);
-      options.appendChild(label);
+      optionsContainer.appendChild(label);
     });
 
-    const submitButton = document.createElement('button');
-    submitButton.type = 'button';
-    submitButton.className = 'btn btn-primary';
-    submitButton.textContent = 'SUBMIT ANSWER';
-    submitButton.addEventListener('click', submitCheckpoint);
+    const continueButton = $('training-checkpoint-continue');
 
-    container.append(
-      heading,
-      prompt,
-      options,
-      submitButton
-    );
+    if (continueButton) {
+      continueButton.disabled = false;
+      continueButton.classList.remove('hidden');
+      continueButton.textContent = 'SUBMIT ANSWER';
+    }
 
-    setText(
-      'training-checkpoint-progress',
-      `Question ${currentCheckpointIndex + 1} of ${checkpoints.length}`
-    );
-
-    clearMessage();
+    checkpointAwaitingNext = false;
+    clearCheckpointFeedback();
   }
 
   async function submitCheckpoint() {
-    if (submittingCheckpoint) return;
+    if (
+      submittingCheckpoint ||
+      !currentModule ||
+      !videoCompleted ||
+      checkpointCompleted
+    ) {
+      return;
+    }
+
+    if (checkpointAwaitingNext) {
+      currentCheckpointIndex++;
+
+      if (currentCheckpointIndex >= checkpoints.length) {
+        finishModule();
+      } else {
+        renderCheckpoint();
+      }
+
+      return;
+    }
 
     const question = checkpoints[currentCheckpointIndex];
 
@@ -372,17 +451,21 @@ const Training = (() => {
     );
 
     if (!selected) {
-      showMessage('Select an answer before continuing.', 'warning');
+      showCheckpointFeedback(
+        'Select an answer before continuing.',
+        'warning'
+      );
       return;
     }
 
     submittingCheckpoint = true;
 
-    const buttons = $('training-checkpoint')?.querySelectorAll('button');
+    const button = $('training-checkpoint-continue');
 
-    buttons?.forEach(button => {
+    if (button) {
       button.disabled = true;
-    });
+      button.textContent = 'CHECKING ANSWER...';
+    }
 
     try {
       const result = await API.answerCheckpoint(
@@ -391,58 +474,51 @@ const Training = (() => {
         selected.value
       );
 
-      if (result.correct) {
+      if (result.correct === true) {
+        checkpointAwaitingNext = true;
 
-        showMessage(
+        showCheckpointFeedback(
           `Correct. ${result.explanation || 'Well done.'}`,
           'success'
         );
 
-        currentCheckpointIndex++;
+        const optionsContainer = $('training-checkpoint-options');
 
-        if (result.checkpointCompleted) {
+        if (optionsContainer) {
+          optionsContainer.querySelectorAll('input').forEach(input => {
+            input.disabled = true;
+          });
+        }
+
+        if (result.checkpointCompleted === true) {
           checkpointCompleted = true;
+        }
 
-          setTimeout(() => {
-            finishModule();
-          }, 1200);
-
-        } else {
-          setTimeout(() => {
-            renderCheckpoint();
-          }, 1200);
+        if (button) {
+          button.disabled = false;
+          button.textContent = checkpointCompleted
+            ? 'COMPLETE MODULE'
+            : 'NEXT QUESTION';
         }
 
       } else {
-
-        showMessage(
-          `Incorrect. ${result.explanation || 'Review the training material and try again.'}`,
+        showCheckpointFeedback(
+          `Incorrect. ${result.explanation || 'Review the learning material and try again.'}`,
           'error'
         );
 
-        // The participant remains on the same question.
-        // The backend determines whether the answer is correct.
-        setTimeout(() => {
-          const container = $('training-checkpoint');
-
-          if (container) {
-            container.querySelectorAll('button').forEach(button => {
-              button.disabled = false;
-            });
-          }
-        }, 300);
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'TRY AGAIN';
+        }
       }
 
     } catch (error) {
+      showCheckpointFeedback(error.message, 'error');
 
-      showMessage(error.message, 'error');
-
-      const container = $('training-checkpoint');
-
-      if (container) {
-        container.querySelectorAll('button').forEach(button => {
-          button.disabled = false;
-        });
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'RETRY ANSWER';
       }
 
     } finally {
@@ -450,42 +526,45 @@ const Training = (() => {
     }
   }
 
-  // Prevent multiple simultaneous checkpoint submissions.
-  let submittingCheckpoint = false;
-
   function finishModule() {
     if (!currentModule || !checkpointCompleted) return;
 
-    hideElement('training-checkpoint-section');
-    hideElement('training-video-section');
-    showElement('training-module-complete');
+    moduleComplete = true;
 
-    setText(
-      'training-module-complete-title',
-      `${currentModule.title} COMPLETE`
-    );
+    hideElement('training-checkpoint');
+    setVideoVisible(false);
 
-    setText(
-      'training-module-complete-message',
-      'Both checkpoint questions have been answered correctly. Your training progress has been recorded.'
-    );
-
-    const nextButton = $('training-next-module');
-
-    if (nextButton) {
-      const isLastModule =
-        currentModuleIndex === MODULES.length - 1;
-
-      nextButton.textContent = isLastModule
-        ? 'CONTINUE TO MISSIONS'
-        : 'NEXT TRAINING MODULE';
-
-      nextButton.disabled = false;
+    if (!completedModules.has(currentModule.id)) {
+      completedModules.add(currentModule.id);
     }
 
-    if (typeof App.addGameXP === 'function') {
+    if (
+      !awardedModules.has(currentModule.id) &&
+      window.App &&
+      typeof App.addGameXP === 'function'
+    ) {
       App.addGameXP(100);
+      awardedModules.add(currentModule.id);
     }
+
+    updateModuleProgress();
+
+    const button = $('training-complete-button');
+
+    if (button) {
+      button.classList.remove('hidden');
+      button.disabled = false;
+
+      button.textContent =
+        currentModuleIndex === MODULES.length - 1
+          ? 'CONTINUE TO MISSIONS'
+          : 'NEXT TRAINING MODULE';
+    }
+
+    showStatus(
+      `${currentModule.title} completed. Both checkpoint questions were answered correctly.`,
+      'success'
+    );
   }
 
   async function openModule(index) {
@@ -494,40 +573,65 @@ const Training = (() => {
     currentModuleIndex = index;
     currentModule = MODULES[index];
 
+    videoEnded = false;
     videoCompleted = false;
+    completionRequestSent = false;
     checkpointCompleted = false;
+    checkpointAwaitingNext = false;
+    moduleComplete = false;
     checkpoints = [];
     currentCheckpointIndex = 0;
-    completionRequestSent = false;
 
-    clearMessage();
+    hideElement('training-checkpoint');
+    setVideoVisible(true);
 
-    hideElement('training-module-complete');
-    hideElement('training-checkpoint-section');
-    showElement('training-video-section');
+    const button = $('training-complete-button');
 
-    setText('training-module-title', currentModule.title);
-    setText('training-module-subtitle', currentModule.subtitle);
-    setText('training-module-description', currentModule.description);
+    if (button) {
+      button.classList.remove('hidden');
+      button.disabled = true;
+      button.textContent = 'WATCH VIDEO TO CONTINUE';
+    }
+
     setText(
-      'training-module-progress',
-      `MODULE ${index + 1} OF ${MODULES.length}`
+      'training-module-number',
+      `MODULE ${index + 1} / ${MODULES.length}`
     );
 
+    setText('training-module-title', currentModule.title);
+    setText('training-module-description', currentModule.description);
+    setText('training-transcript', currentModule.learningPoints);
+
+    updateModuleProgress();
+    clearCheckpointFeedback();
+
     try {
-      showMessage('Loading training video...', 'info');
+      showStatus(
+        `Loading module ${index + 1} of ${MODULES.length}...`,
+        'info'
+      );
+
       await createPlayer(currentModule);
-      clearMessage();
+
+      showStatus(
+        'Watch the complete training video. The checkpoint will unlock when playback finishes.',
+        'info'
+      );
 
     } catch (error) {
-      showMessage(error.message, 'error');
+      showStatus(error.message, 'error');
+
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'VIDEO UNAVAILABLE';
+      }
     }
   }
 
   async function nextModule() {
-    if (!checkpointCompleted) {
-      showMessage(
-        'Complete both checkpoint questions before proceeding.',
+    if (moduleComplete !== true || !checkpointCompleted) {
+      showStatus(
+        'Complete the video and both checkpoint questions before proceeding.',
         'warning'
       );
       return;
@@ -541,34 +645,47 @@ const Training = (() => {
     await App.continueToMissions();
   }
 
-  async function initialise() {
-    if (initialized) {
-      initialized = false;
+  function bindEvents() {
+    const videoButton = $('training-complete-button');
+
+    if (
+      videoButton &&
+      !videoButton.dataset.trainingBound
+    ) {
+      videoButton.addEventListener('click', async () => {
+        if (moduleComplete) {
+          await nextModule();
+          return;
+        }
+
+        if (videoEnded && !videoCompleted) {
+          await handleVideoEnded();
+          return;
+        }
+
+        showStatus(
+          'You must watch the complete video before continuing.',
+          'warning'
+        );
+      });
+
+      videoButton.dataset.trainingBound = 'true';
     }
 
-    const nextButton = $('training-next-module');
+    const checkpointButton = $('training-checkpoint-continue');
 
-    if (nextButton) {
-      nextButton.replaceWith(nextButton.cloneNode(true));
+    if (
+      checkpointButton &&
+      !checkpointButton.dataset.trainingBound
+    ) {
+      checkpointButton.addEventListener('click', submitCheckpoint);
+      checkpointButton.dataset.trainingBound = 'true';
     }
-
-    const refreshedNextButton = $('training-next-module');
-
-    if (refreshedNextButton) {
-      refreshedNextButton.addEventListener('click', nextModule);
-    }
-
-    initialized = true;
-
-    await openModule(0);
   }
 
-  function bindEvents() {
-    const nextButton = $('training-next-module');
-
-    if (nextButton) {
-      nextButton.addEventListener('click', nextModule);
-    }
+  async function initialise() {
+    bindEvents();
+    await openModule(0);
   }
 
   return {
@@ -576,6 +693,7 @@ const Training = (() => {
     bindEvents,
     openModule,
     nextModule,
+
     getModules() {
       return MODULES.map(module => ({
         id: module.id,
