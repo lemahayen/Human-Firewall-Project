@@ -309,9 +309,6 @@ const Training = (() => {
 
         } else {
 
-          // Handle the case where the API became available
-          // while another part of the application loaded it.
-
           finishSuccessfully();
 
         }
@@ -337,15 +334,7 @@ const Training = (() => {
       );
     }
 
-    // Remove the previous player completely.
-    // The YouTube API will create and manage its own iframe.
-
     container.replaceChildren();
-
-    // IMPORTANT:
-    // YT.Player must receive a DIV placeholder here.
-    // Do not create an iframe manually and then ask the
-    // YouTube API to initialise another player inside it.
 
     const placeholder = document.createElement('div');
 
@@ -452,9 +441,6 @@ const Training = (() => {
               onReady: event => {
 
                 playerReady = true;
-
-                // Ensure the generated iframe has the
-                // permissions required for YouTube playback.
 
                 const iframe = event.target.getIframe();
 
@@ -754,17 +740,24 @@ const Training = (() => {
 
   async function submitCheckpoint() {
 
+    // IMPORTANT FIX:
+    // Do not block the final checkpoint transition just
+    // because checkpointCompleted is already true.
+    //
+    // The final correct answer sets checkpointAwaitingNext
+    // and checkpointCompleted. The next click must be allowed
+    // to reach the transition below and finish the module.
+
     if (
       submittingCheckpoint ||
       !currentModule ||
-      !videoCompleted ||
-      checkpointCompleted
+      !videoCompleted
     ) {
       return;
     }
 
     // A correct answer has already been recorded.
-    // The participant can now move to the next question.
+    // Move to the next question or finish the module.
 
     if (checkpointAwaitingNext) {
 
@@ -776,6 +769,13 @@ const Training = (() => {
         renderCheckpoint();
       }
 
+      return;
+    }
+
+    // Prevent any further answer submission after the
+    // required checkpoints have been completed.
+
+    if (checkpointCompleted) {
       return;
     }
 
@@ -1121,9 +1121,6 @@ const Training = (() => {
             return;
           }
 
-          // Video finished and completion was recorded,
-          // but checkpoint retrieval previously failed.
-
           if (videoCompleted && !checkpoints.length) {
 
             const loaded = await loadCheckpoints();
@@ -1137,8 +1134,6 @@ const Training = (() => {
             return;
 
           }
-
-          // Video finished but backend recording failed.
 
           if (videoEnded && !videoCompleted) {
             await handleVideoEnded();
