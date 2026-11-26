@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#05090b">
+  <meta name="theme-color" content="#10243a">
   <meta name="description" content="Human Firewall: a gamified cybersecurity awareness training platform.">
   <title>The Human Firewall | Cyber Defence Mission</title>
 
@@ -45,9 +45,7 @@
 
       <div id="app-message" class="feedback hidden" role="status" aria-live="polite"></div>
 
-      <!-- ================================================== -->
-      <!-- REGISTRATION AND CONSENT                            -->
-      <!-- ================================================== -->
+      <!-- REGISTRATION AND CONSENT -->
 
       <section id="screen-registration" class="screen active">
         <div class="panel">
@@ -99,12 +97,7 @@
 
           <div class="consent-box">
             <label class="option">
-              <input
-                type="checkbox"
-                id="consent-accepted"
-                name="consent"
-                value="accepted"
-              >
+              <input type="checkbox" id="consent-accepted" name="consent" value="accepted">
               <span>
                 I have read the participant information above and voluntarily
                 agree to participate in this cybersecurity awareness study.
@@ -129,9 +122,7 @@
         </div>
       </section>
 
-      <!-- ================================================== -->
-      <!-- PRE-TRAINING ASSESSMENT                              -->
-      <!-- ================================================== -->
+      <!-- PRE-TRAINING ASSESSMENT -->
 
       <section id="screen-pretest" class="screen">
         <div class="panel">
@@ -159,35 +150,20 @@
 
             <div id="assessment-questions"></div>
 
-            <div
-              id="assessment-feedback"
-              class="feedback hidden"
-              role="status"
-              aria-live="polite"
-            ></div>
+            <div id="assessment-feedback" class="feedback hidden" role="status" aria-live="polite"></div>
 
-            <button
-              type="button"
-              class="btn primary"
-              id="assessment-submit"
-            >
+            <button type="button" class="btn primary" id="assessment-submit">
               SUBMIT ANSWERS &gt;
             </button>
 
-            <button
-              type="button"
-              class="btn secondary hidden"
-              id="assessment-next"
-            >
+            <button type="button" class="btn secondary hidden" id="assessment-next">
               CONTINUE &gt;
             </button>
           </div>
         </div>
       </section>
 
-      <!-- ================================================== -->
-      <!-- TRAINING MODULES                                    -->
-      <!-- ================================================== -->
+      <!-- TRAINING MODULES -->
 
       <section id="screen-training" class="screen">
         <div class="panel">
@@ -196,7 +172,7 @@
           <h2>Security awareness briefing</h2>
 
           <p>
-            Complete each training module and its mandatory checkpoint
+            Complete each training video and its two mandatory checkpoint
             questions before proceeding to the next module.
           </p>
 
@@ -217,12 +193,16 @@
             </div>
           </div>
 
-          <div class="card">
+          <div id="training-video-section" class="card">
             <div class="eyebrow" id="training-module-number">
               MODULE 01 / 03
             </div>
 
             <h3 id="training-module-title">Password Security</h3>
+
+            <p id="training-module-subtitle" class="muted">
+              Protecting access and digital identities
+            </p>
 
             <p id="training-module-description">
               Learn how to protect workplace accounts using strong,
@@ -230,14 +210,9 @@
             </p>
 
             <div class="video-container">
-              <iframe
-                id="training-video"
-                title="Cybersecurity training video"
-                src="about:blank"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
+              <div id="training-video">
+                <div id="youtube-player"></div>
+              </div>
             </div>
 
             <div class="card">
@@ -246,51 +221,34 @@
                 Training information will appear here.
               </p>
             </div>
-
-            <button
-              type="button"
-              class="btn primary"
-              id="training-complete-button"
-            >
-              COMPLETE VIDEO &gt;
-            </button>
           </div>
 
-          <div id="training-checkpoint" class="card hidden">
-            <div class="eyebrow">
-              MANDATORY CHECKPOINT
-            </div>
+          <div id="training-feedback" class="feedback hidden" role="status" aria-live="polite"></div>
 
-            <h3 id="training-checkpoint-question"></h3>
+          <div id="training-checkpoint-section" class="card hidden">
+            <div class="eyebrow">MANDATORY CHECKPOINT</div>
+            <div id="training-checkpoint"></div>
+            <p id="training-checkpoint-progress" class="muted"></p>
+          </div>
 
-            <div id="training-checkpoint-options"></div>
+          <div id="training-module-complete" class="card hidden">
+            <div class="eyebrow">MODULE COMPLETED</div>
+            <h3 id="training-module-complete-title"></h3>
+            <p id="training-module-complete-message"></p>
 
-            <div
-              id="training-checkpoint-feedback"
-              class="feedback hidden"
-              role="status"
-              aria-live="polite"
-            ></div>
-
-            <button
-              type="button"
-              class="btn primary hidden"
-              id="training-checkpoint-continue"
-            >
-              CONTINUE &gt;
+            <button type="button" class="btn primary" id="training-next-module">
+              NEXT TRAINING MODULE
             </button>
           </div>
 
           <div class="progressline">
-            <span>COMPLETED MODULES</span>
-            <span id="training-module-progress">0 / 3</span>
+            <span>TRAINING PROGRESS</span>
+            <span id="training-module-progress">MODULE 1 OF 3</span>
           </div>
         </div>
       </section>
 
-      <!-- ================================================== -->
-      <!-- INTERACTIVE MISSIONS                                -->
-      <!-- ================================================== -->
+      <!-- INTERACTIVE MISSIONS -->
 
       <section id="screen-missions" class="screen">
         <div class="panel">
@@ -339,20 +297,13 @@
 
           <div id="mission-detail" class="card hidden"></div>
 
-          <div
-            id="mission-feedback"
-            class="feedback hidden"
-            role="status"
-            aria-live="polite"
-          ></div>
+          <div id="mission-feedback" class="feedback hidden" role="status" aria-live="polite"></div>
 
           <div id="mission-action"></div>
         </div>
       </section>
 
-      <!-- ================================================== -->
-      <!-- POST-TRAINING ASSESSMENT                             -->
-      <!-- ================================================== -->
+      <!-- POST-TRAINING ASSESSMENT -->
 
       <section id="screen-posttest" class="screen">
         <div class="panel">
@@ -375,34 +326,19 @@
 
           <div id="assessment-questions-post"></div>
 
-          <div
-            id="assessment-feedback-post"
-            class="feedback hidden"
-            role="status"
-            aria-live="polite"
-          ></div>
+          <div id="assessment-feedback-post" class="feedback hidden" role="status" aria-live="polite"></div>
 
-          <button
-            type="button"
-            class="btn primary"
-            id="assessment-submit-post"
-          >
+          <button type="button" class="btn primary" id="assessment-submit-post">
             SUBMIT ANSWERS &gt;
           </button>
 
-          <button
-            type="button"
-            class="btn secondary hidden"
-            id="assessment-next-post"
-          >
+          <button type="button" class="btn secondary hidden" id="assessment-next-post">
             CONTINUE &gt;
           </button>
         </div>
       </section>
 
-      <!-- ================================================== -->
-      <!-- FINAL ASSESSMENT                                    -->
-      <!-- ================================================== -->
+      <!-- FINAL ASSESSMENT -->
 
       <section id="screen-finalquiz" class="screen">
         <div class="panel">
@@ -424,34 +360,19 @@
 
           <div id="assessment-questions-final"></div>
 
-          <div
-            id="assessment-feedback-final"
-            class="feedback hidden"
-            role="status"
-            aria-live="polite"
-          ></div>
+          <div id="assessment-feedback-final" class="feedback hidden" role="status" aria-live="polite"></div>
 
-          <button
-            type="button"
-            class="btn primary"
-            id="assessment-submit-final"
-          >
+          <button type="button" class="btn primary" id="assessment-submit-final">
             SUBMIT FINAL ASSESSMENT &gt;
           </button>
 
-          <button
-            type="button"
-            class="btn secondary hidden"
-            id="assessment-next-final"
-          >
+          <button type="button" class="btn secondary hidden" id="assessment-next-final">
             VIEW RESULTS &gt;
           </button>
         </div>
       </section>
 
-      <!-- ================================================== -->
-      <!-- RESULTS                                             -->
-      <!-- ================================================== -->
+      <!-- RESULTS -->
 
       <section id="screen-results" class="screen">
         <div class="panel">
@@ -460,8 +381,7 @@
           <h2>Cyber defence results</h2>
 
           <p>
-            Your assessment results and knowledge development are summarised
-            below.
+            Your assessment results and knowledge development are summarised below.
           </p>
 
           <div class="stats-grid">
@@ -505,9 +425,7 @@
           <div class="card">
             <div class="eyebrow">KNOWLEDGE BY TOPIC</div>
             <h3>Topic performance</h3>
-            <div id="result-topic-breakdown">
-              Topic results will appear here.
-            </div>
+            <div id="result-topic-breakdown">Topic results will appear here.</div>
           </div>
 
           <div class="card">
@@ -551,9 +469,11 @@
 
   </div>
 
-  <!-- Application modules -->
   <script src="/js/api.js"></script>
   <script src="/js/assessments.js"></script>
+  <script src="/js/training.js"></script>
+  <script src="/js/missions.js"></script>
+  <script src="/js/results.js"></script>
   <script src="/js/app.js"></script>
 
   <script>
