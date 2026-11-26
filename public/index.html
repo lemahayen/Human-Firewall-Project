@@ -193,16 +193,12 @@
             </div>
           </div>
 
-          <div id="training-video-section" class="card">
+          <div class="card">
             <div class="eyebrow" id="training-module-number">
               MODULE 01 / 03
             </div>
 
             <h3 id="training-module-title">Password Security</h3>
-
-            <p id="training-module-subtitle" class="muted">
-              Protecting access and digital identities
-            </p>
 
             <p id="training-module-description">
               Learn how to protect workplace accounts using strong,
@@ -210,9 +206,14 @@
             </p>
 
             <div class="video-container">
-              <div id="training-video">
-                <div id="youtube-player"></div>
-              </div>
+              <iframe
+                id="training-video"
+                title="Cybersecurity training video"
+                src="about:blank"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
             </div>
 
             <div class="card">
@@ -221,29 +222,42 @@
                 Training information will appear here.
               </p>
             </div>
+
+            <button
+              type="button"
+              class="btn primary"
+              id="training-complete-button"
+            >
+              COMPLETE VIDEO &gt;
+            </button>
           </div>
 
-          <div id="training-feedback" class="feedback hidden" role="status" aria-live="polite"></div>
-
-          <div id="training-checkpoint-section" class="card hidden">
+          <div id="training-checkpoint" class="card hidden">
             <div class="eyebrow">MANDATORY CHECKPOINT</div>
-            <div id="training-checkpoint"></div>
-            <p id="training-checkpoint-progress" class="muted"></p>
-          </div>
 
-          <div id="training-module-complete" class="card hidden">
-            <div class="eyebrow">MODULE COMPLETED</div>
-            <h3 id="training-module-complete-title"></h3>
-            <p id="training-module-complete-message"></p>
+            <h3 id="training-checkpoint-question"></h3>
 
-            <button type="button" class="btn primary" id="training-next-module">
-              NEXT TRAINING MODULE
+            <div id="training-checkpoint-options"></div>
+
+            <div
+              id="training-checkpoint-feedback"
+              class="feedback hidden"
+              role="status"
+              aria-live="polite"
+            ></div>
+
+            <button
+              type="button"
+              class="btn primary hidden"
+              id="training-checkpoint-continue"
+            >
+              CONTINUE &gt;
             </button>
           </div>
 
           <div class="progressline">
-            <span>TRAINING PROGRESS</span>
-            <span id="training-module-progress">MODULE 1 OF 3</span>
+            <span>COMPLETED MODULES</span>
+            <span id="training-module-progress">0 / 3</span>
           </div>
         </div>
       </section>
@@ -469,17 +483,21 @@
 
   </div>
 
+  <!-- Only files that currently exist -->
+
   <script src="/js/api.js"></script>
   <script src="/js/assessments.js"></script>
   <script src="/js/training.js"></script>
-  <script src="/js/missions.js"></script>
-  <script src="/js/results.js"></script>
   <script src="/js/app.js"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      if (window.Assessments && typeof Assessments.bindEvents === 'function') {
+      if (typeof Assessments !== 'undefined') {
         Assessments.bindEvents();
+      }
+
+      if (typeof Training !== 'undefined') {
+        Training.bindEvents();
       }
 
       const resultsLogout = document.getElementById('logout-button-results');
