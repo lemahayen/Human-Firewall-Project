@@ -1,13 +1,13 @@
 
 // ============================================================
 // HUMAN FIREWALL
-// Assessment module
-// Pre-test, post-test and final assessment
+// Server-driven assessment module
 //
-// IMPORTANT:
-// - Questions are retrieved from the backend.
-// - Correct answers are never stored in this frontend.
-// - Scores are calculated and validated by the backend.
+// Pre-test: 6 questions
+// Post-test: 6 different questions
+// Final assessment: 10 questions
+//
+// Correct answers and scores are handled by the backend.
 // ============================================================
 
 'use strict';
@@ -24,6 +24,33 @@ const Assessments = (() => {
     final: 10
   };
 
+  const ELEMENTS = {
+    pre: {
+      title: 'assessment-title',
+      instructions: 'assessment-instructions',
+      questions: 'assessment-questions',
+      feedback: 'assessment-feedback',
+      submit: 'assessment-submit',
+      next: 'assessment-next'
+    },
+    post: {
+      title: 'assessment-title-post',
+      instructions: null,
+      questions: 'assessment-questions-post',
+      feedback: 'assessment-feedback-post',
+      submit: 'assessment-submit-post',
+      next: 'assessment-next-post'
+    },
+    final: {
+      title: 'assessment-title-final',
+      instructions: null,
+      questions: 'assessment-questions-final',
+      feedback: 'assessment-feedback-final',
+      submit: 'assessment-submit-final',
+      next: 'assessment-next-final'
+    }
+  };
+
   const TITLES = {
     pre: 'BASELINE SECURITY ASSESSMENT',
     post: 'POST-TRAINING ASSESSMENT',
@@ -31,47 +58,53 @@ const Assessments = (() => {
   };
 
   const INSTRUCTIONS = {
-    pre: 'Answer all six questions. This assessment establishes your starting cybersecurity awareness level. You will not receive individual correctness feedback while completing it.',
-    post: 'Answer all six questions. These questions assess the knowledge covered during your training.',
-    final: 'Complete all ten scenario-based questions. You must achieve at least 50% to pass the final assessment.'
+    pre: 'Answer all six questions based on your current knowledge. No correctness feedback is displayed during this assessment.',
+    post: 'Answer all six questions based on the knowledge covered during your training.',
+    final: 'Complete all ten scenario-based questions. You must achieve at least 50% to pass.'
   };
 
   function $(id) {
     return document.getElementById(id);
   }
 
-  function setText(id, value) {
-    const element = $(id);
-    if (element) element.textContent = value;
+  function element(name) {
+    if (!currentType) return null;
+
+    const id = ELEMENTS[currentType][name];
+    return id ? $(id) : null;
+  }
+
+  function setText(name, value) {
+    const target = element(name);
+    if (target) target.textContent = value;
   }
 
   function showFeedback(message, type = 'info') {
-    const element = $('assessment-feedback');
+    const target = element('feedback');
 
-    if (!element) {
+    if (!target) {
       console.log(message);
       return;
     }
 
-    element.textContent = message;
-    element.className = `feedback ${type}`;
-    element.classList.remove('hidden');
+    target.textContent = message;
+    target.className = `feedback ${type}`;
+    target.classList.remove('hidden');
   }
 
   function clearFeedback() {
-    const element = $('assessment-feedback');
+    const target = element('feedback');
 
-    if (!element) return;
+    if (!target) return;
 
-    element.textContent = '';
-    element.className = 'feedback hidden';
+    target.textContent = '';
+    target.className = 'feedback hidden';
   }
 
   function setSubmitting(value) {
     submitting = value;
 
-    const button = $('assessment-submit');
-
+    const button = element('submit');
     if (!button) return;
 
     button.disabled = value;
@@ -81,10 +114,12 @@ const Assessments = (() => {
   }
 
   function renderQuestions(questions) {
-    const container = $('assessment-questions');
+    const container = element('questions');
 
     if (!container) {
-      throw new Error('The assessment question container is missing.');
+      throw new Error(
+        `The ${currentType} assessment question container is missing.`
+      );
     }
 
     container.replaceChildren();
@@ -98,7 +133,7 @@ const Assessments = (() => {
         `QUESTION ${index + 1} OF ${questions.length}`;
 
       const topic = document.createElement('p');
-      topic.className = 'question-topic';
+      topic.className = 'muted';
       topic.textContent = String(question.topic || '')
         .replaceAll('_', ' ')
         .toUpperCase();
@@ -136,12 +171,8 @@ const Assessments = (() => {
     const answers = [];
 
     for (const question of currentQuestions) {
-      const radios = document.querySelectorAll(
-        'input[type="radio"]:checked'
-      );
-
-      const selected = Array.from(radios).find(
-        radio => radio.name === `question-${question.questionId}`
+      const selected = document.querySelector(
+        `input[name="question-${CSS.escape(question.questionId)}"]:checked`
       );
 
       if (!selected) {
@@ -166,19 +197,23 @@ const Assessments = (() => {
       throw new Error('The server returned an invalid assessment score.');
     }
 
-    const message =
+    let message =
       `Assessment completed: ${result.score}/${result.total} correct (${percentage}%).`;
 
-    showFeedback(message, 'success');
-
     if (currentType === 'final') {
-      showFeedback(
-        `${message} ${result.passed ? 'You passed!' : 'You did not reach the 50% pass mark.'}`,
-        result.passed ? 'success' : 'warning'
-      );
+      message += result.passed
+        ? ' You passed the final assessment.'
+        : ' You did not reach the 50% passing mark.';
     }
 
-    const nextButton = $('assessment-next');
+    showFeedback(
+      message,
+      currentType === 'final' && !result.passed
+        ? 'warning'
+        : 'success'
+    );
+
+    const nextButton = element('next');
 
     if (nextButton) {
       nextButton.classList.remove('hidden');
@@ -192,7 +227,7 @@ const Assessments = (() => {
       }
     }
 
-    const submitButton = $('assessment-submit');
+    const submitButton = element('submit');
 
     if (submitButton) {
       submitButton.classList.add('hidden');
@@ -211,16 +246,13 @@ const Assessments = (() => {
 
     clearFeedback();
 
-    setText('assessment-title', TITLES[type]);
-    setText('assessment-instructions', INSTRUCTIONS[type]);
+    setText('title', TITLES[type]);
+    setText('instructions', INSTRUCTIONS[type]);
 
-    const questionContainer = $('assessment-questions');
+    const questionContainer = element('questions');
+    if (questionContainer) questionContainer.replaceChildren();
 
-    if (questionContainer) {
-      questionContainer.replaceChildren();
-    }
-
-    const submitButton = $('assessment-submit');
+    const submitButton = element('submit');
 
     if (submitButton) {
       submitButton.disabled = false;
@@ -228,11 +260,8 @@ const Assessments = (() => {
       submitButton.classList.remove('hidden');
     }
 
-    const nextButton = $('assessment-next');
-
-    if (nextButton) {
-      nextButton.classList.add('hidden');
-    }
+    const nextButton = element('next');
+    if (nextButton) nextButton.classList.add('hidden');
 
     try {
       showFeedback('Loading assessment questions...', 'info');
@@ -321,11 +350,8 @@ const Assessments = (() => {
 
       App.state.assessmentResults[currentType] = result;
 
-      const questionContainer = $('assessment-questions');
-
-      if (questionContainer) {
-        questionContainer.replaceChildren();
-      }
+      const questionContainer = element('questions');
+      if (questionContainer) questionContainer.replaceChildren();
 
       displayResult(result);
 
@@ -359,16 +385,22 @@ const Assessments = (() => {
   }
 
   function bindEvents() {
-    const submitButton = $('assessment-submit');
-    const nextButton = $('assessment-next');
+    Object.keys(ELEMENTS).forEach(type => {
+      const ids = ELEMENTS[type];
 
-    if (submitButton) {
-      submitButton.addEventListener('click', submit);
-    }
+      const submitButton = $(ids.submit);
+      const nextButton = $(ids.next);
 
-    if (nextButton) {
-      nextButton.addEventListener('click', continueAfterAssessment);
-    }
+      if (submitButton && !submitButton.dataset.assessmentBound) {
+        submitButton.addEventListener('click', submit);
+        submitButton.dataset.assessmentBound = 'true';
+      }
+
+      if (nextButton && !nextButton.dataset.assessmentBound) {
+        nextButton.addEventListener('click', continueAfterAssessment);
+        nextButton.dataset.assessmentBound = 'true';
+      }
+    });
   }
 
   return {
