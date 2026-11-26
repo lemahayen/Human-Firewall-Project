@@ -1,15 +1,40 @@
 
 // ============================================================
 // HUMAN FIREWALL
-// Assessment module: pre-test, post-test and final assessment
-// Scores and answer validation are handled by the backend.
+// Assessment module
+// Pre-test, post-test and final assessment
+//
+// IMPORTANT:
+// - Questions are retrieved from the backend.
+// - Correct answers are never stored in this frontend.
+// - Scores are calculated and validated by the backend.
 // ============================================================
+
+'use strict';
 
 const Assessments = (() => {
   let currentType = null;
   let currentAttemptId = null;
   let currentQuestions = [];
   let submitting = false;
+
+  const EXPECTED_COUNTS = {
+    pre: 6,
+    post: 6,
+    final: 10
+  };
+
+  const TITLES = {
+    pre: 'BASELINE SECURITY ASSESSMENT',
+    post: 'POST-TRAINING ASSESSMENT',
+    final: 'FINAL CYBERSECURITY CHALLENGE'
+  };
+
+  const INSTRUCTIONS = {
+    pre: 'Answer all six questions. This assessment establishes your starting cybersecurity awareness level. You will not receive individual correctness feedback while completing it.',
+    post: 'Answer all six questions. These questions assess the knowledge covered during your training.',
+    final: 'Complete all ten scenario-based questions. You must achieve at least 50% to pass the final assessment.'
+  };
 
   function $(id) {
     return document.getElementById(id);
@@ -22,7 +47,11 @@ const Assessments = (() => {
 
   function showFeedback(message, type = 'info') {
     const element = $('assessment-feedback');
-    if (!element) return;
+
+    if (!element) {
+      console.log(message);
+      return;
+    }
 
     element.textContent = message;
     element.className = `feedback ${type}`;
@@ -31,39 +60,31 @@ const Assessments = (() => {
 
   function clearFeedback() {
     const element = $('assessment-feedback');
+
     if (!element) return;
 
     element.textContent = '';
     element.className = 'feedback hidden';
   }
 
-  function getAssessmentTitle(type) {
-    const titles = {
-      pre: 'BASELINE SECURITY ASSESSMENT',
-      post: 'POST-TRAINING ASSESSMENT',
-      final: 'FINAL CYBERSECURITY CHALLENGE'
-    };
+  function setSubmitting(value) {
+    submitting = value;
 
-    return titles[type] || 'ASSESSMENT';
-  }
+    const button = $('assessment-submit');
 
-  function getInstructions(type) {
-    if (type === 'pre') {
-      return 'Answer all six questions. This assessment establishes your starting cybersecurity awareness level. You will not receive individual answer feedback while completing it.';
-    }
+    if (!button) return;
 
-    if (type === 'post') {
-      return 'Answer all six questions. These questions assess the knowledge covered during your training. Select the best response for each situation.';
-    }
-
-    return 'Complete all ten scenario-based questions. You must achieve at least 50% to pass the final assessment.';
+    button.disabled = value;
+    button.textContent = value
+      ? 'SUBMITTING...'
+      : 'SUBMIT ASSESSMENT';
   }
 
   function renderQuestions(questions) {
     const container = $('assessment-questions');
 
     if (!container) {
-      throw new Error('Assessment question container is missing from the page.');
+      throw new Error('The assessment question container is missing.');
     }
 
     container.replaceChildren();
@@ -73,11 +94,14 @@ const Assessments = (() => {
       card.className = 'question-card';
 
       const heading = document.createElement('h3');
-      heading.textContent = `QUESTION ${index + 1} OF ${questions.length}`;
+      heading.textContent =
+        `QUESTION ${index + 1} OF ${questions.length}`;
 
       const topic = document.createElement('p');
       topic.className = 'question-topic';
-      topic.textContent = question.topic.replaceAll('_', ' ').toUpperCase();
+      topic.textContent = String(question.topic || '')
+        .replaceAll('_', ' ')
+        .toUpperCase();
 
       const prompt = document.createElement('p');
       prompt.className = 'question-prompt';
@@ -92,7 +116,7 @@ const Assessments = (() => {
 
         const radio = document.createElement('input');
         radio.type = 'radio';
-        radio.name = `question-${question.question_id}`;
+        radio.name = `question-${question.questionId}`;
         radio.value = option.id;
         radio.required = true;
 
@@ -112,16 +136,22 @@ const Assessments = (() => {
     const answers = [];
 
     for (const question of currentQuestions) {
-      const selected = document.querySelector(
-        `input[name="question-${CSS.escape(question.question_id)}"]:checked`
+      const radios = document.querySelectorAll(
+        'input[type="radio"]:checked'
+      );
+
+      const selected = Array.from(radios).find(
+        radio => radio.name === `question-${question.questionId}`
       );
 
       if (!selected) {
-        throw new Error('Please answer every question before submitting.');
+        throw new Error(
+          'Please answer every question before submitting.'
+        );
       }
 
       answers.push({
-        questionId: question.question_id,
+        questionId: question.questionId,
         selectedOption: selected.value
       });
     }
@@ -129,18 +159,48 @@ const Assessments = (() => {
     return answers;
   }
 
-  function setSubmitting(value) {
-    submitting = value;
+  function displayResult(result) {
+    const percentage = Number(result.percentage);
 
-    const button = $('assessment-submit');
-    if (!button) return;
+    if (!Number.isFinite(percentage)) {
+      throw new Error('The server returned an invalid assessment score.');
+    }
 
-    button.disabled = value;
-    button.textContent = value ? 'SUBMITTING...' : 'SUBMIT ASSESSMENT';
+    const message =
+      `Assessment completed: ${result.score}/${result.total} correct (${percentage}%).`;
+
+    showFeedback(message, 'success');
+
+    if (currentType === 'final') {
+      showFeedback(
+        `${message} ${result.passed ? 'You passed!' : 'You did not reach the 50% pass mark.'}`,
+        result.passed ? 'success' : 'warning'
+      );
+    }
+
+    const nextButton = $('assessment-next');
+
+    if (nextButton) {
+      nextButton.classList.remove('hidden');
+
+      if (currentType === 'pre') {
+        nextButton.textContent = 'CONTINUE TO TRAINING';
+      } else if (currentType === 'post') {
+        nextButton.textContent = 'CONTINUE TO FINAL ASSESSMENT';
+      } else {
+        nextButton.textContent = 'VIEW FINAL RESULTS';
+      }
+    }
+
+    const submitButton = $('assessment-submit');
+
+    if (submitButton) {
+      submitButton.classList.add('hidden');
+    }
   }
 
   async function start(type) {
-    if (!['pre', 'post', 'final'].includes(type)) {
+    if (!Object.hasOwn(EXPECTED_COUNTS, type)) {
       throw new Error('Invalid assessment type.');
     }
 
@@ -151,15 +211,17 @@ const Assessments = (() => {
 
     clearFeedback();
 
-    setText('assessment-title', getAssessmentTitle(type));
-    setText('assessment-instructions', getInstructions(type));
+    setText('assessment-title', TITLES[type]);
+    setText('assessment-instructions', INSTRUCTIONS[type]);
 
     const questionContainer = $('assessment-questions');
+
     if (questionContainer) {
       questionContainer.replaceChildren();
     }
 
     const submitButton = $('assessment-submit');
+
     if (submitButton) {
       submitButton.disabled = false;
       submitButton.textContent = 'SUBMIT ASSESSMENT';
@@ -167,27 +229,52 @@ const Assessments = (() => {
     }
 
     const nextButton = $('assessment-next');
-    if (nextButton) nextButton.classList.add('hidden');
+
+    if (nextButton) {
+      nextButton.classList.add('hidden');
+    }
 
     try {
       showFeedback('Loading assessment questions...', 'info');
 
       const response = await API.startAssessment(type);
 
-      if (!response.attemptId || !Array.isArray(response.questions)) {
-        throw new Error('The server returned an incomplete assessment.');
+      if (
+        !response ||
+        typeof response.attemptId !== 'string' ||
+        !Array.isArray(response.questions)
+      ) {
+        throw new Error('The server returned an invalid assessment.');
+      }
+
+      if (response.questions.length !== EXPECTED_COUNTS[type]) {
+        throw new Error(
+          `Expected ${EXPECTED_COUNTS[type]} questions, but received ${response.questions.length}.`
+        );
+      }
+
+      for (const question of response.questions) {
+        if (
+          typeof question.questionId !== 'string' ||
+          typeof question.prompt !== 'string' ||
+          !Array.isArray(question.options) ||
+          question.options.length < 2
+        ) {
+          throw new Error('The server returned an invalid question.');
+        }
+
+        for (const option of question.options) {
+          if (
+            typeof option.id !== 'string' ||
+            typeof option.text !== 'string'
+          ) {
+            throw new Error('The server returned an invalid answer option.');
+          }
+        }
       }
 
       currentAttemptId = response.attemptId;
       currentQuestions = response.questions;
-
-      const expectedCount = type === 'final' ? 10 : 6;
-
-      if (currentQuestions.length !== expectedCount) {
-        throw new Error(
-          `Expected ${expectedCount} questions but received ${currentQuestions.length}.`
-        );
-      }
 
       renderQuestions(currentQuestions);
       clearFeedback();
@@ -199,7 +286,9 @@ const Assessments = (() => {
   }
 
   async function submit() {
-    if (submitting || !currentAttemptId || !currentType) return;
+    if (submitting || !currentAttemptId || !currentType) {
+      return;
+    }
 
     clearFeedback();
 
@@ -221,42 +310,24 @@ const Assessments = (() => {
         answers
       );
 
-      // Store server-calculated results only.
+      if (
+        !result ||
+        typeof result.score !== 'number' ||
+        typeof result.total !== 'number' ||
+        typeof result.percentage !== 'number'
+      ) {
+        throw new Error('The server returned an invalid assessment result.');
+      }
+
       App.state.assessmentResults[currentType] = result;
 
       const questionContainer = $('assessment-questions');
+
       if (questionContainer) {
         questionContainer.replaceChildren();
       }
 
-      const submitButton = $('assessment-submit');
-      if (submitButton) submitButton.classList.add('hidden');
-
-      if (currentType === 'final') {
-        showFeedback(
-          `Final assessment completed. Your score is ${result.percentage}%.`,
-          result.passed ? 'success' : 'warning'
-        );
-      } else {
-        showFeedback(
-          `Assessment completed. Your score is ${result.score} out of ${result.total}.`,
-          'success'
-        );
-      }
-
-      const nextButton = $('assessment-next');
-
-      if (nextButton) {
-        nextButton.classList.remove('hidden');
-
-        if (currentType === 'pre') {
-          nextButton.textContent = 'CONTINUE TO TRAINING';
-        } else if (currentType === 'post') {
-          nextButton.textContent = 'CONTINUE TO FINAL ASSESSMENT';
-        } else {
-          nextButton.textContent = 'VIEW FINAL RESULTS';
-        }
-      }
+      displayResult(result);
 
     } catch (error) {
       showFeedback(error.message, 'error');
@@ -265,16 +336,25 @@ const Assessments = (() => {
     }
   }
 
-  function continueAfterAssessment() {
+  async function continueAfterAssessment() {
     if (!currentType) return;
 
     if (currentType === 'pre') {
-      App.continueToTraining();
-    } else if (currentType === 'post') {
-      App.continueToFinalQuiz();
-    } else if (currentType === 'final') {
+      await App.continueToTraining();
+      return;
+    }
+
+    if (currentType === 'post') {
+      await App.continueToFinalQuiz();
+      return;
+    }
+
+    if (currentType === 'final') {
       const result = App.state.assessmentResults.final;
-      if (result) App.showResults(result);
+
+      if (result) {
+        await App.showResults(result);
+      }
     }
   }
 
