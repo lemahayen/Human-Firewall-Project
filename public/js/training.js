@@ -1,27 +1,33 @@
 
-/* ============================================================
-   HUMAN FIREWALL
-   Training module controller
-
-   Three mandatory modules:
-   1. Password Security
-   2. Phishing Detective
-   3. Safe Data Handling
-
-   Each module requires:
-   - Full video playback until the YouTube ENDED event
-   - Two correctly answered checkpoint questions
-   - Server-recorded completion
-
-   IMPORTANT:
-   Video completion is client-reported. The YouTube player
-   event improves progression control but is not independent
-   proof of participant attention.
-============================================================ */
+/*
+ * ============================================================
+ * HUMAN FIREWALL
+ * Training module controller
+ *
+ * Three mandatory modules:
+ * 1. Password Security
+ * 2. Phishing Detective
+ * 3. Safe Data Handling
+ *
+ * Each module requires:
+ * - Complete video playback until YouTube ENDED event
+ * - Two correctly answered checkpoint questions
+ * - Server-recorded video and checkpoint completion
+ *
+ * IMPORTANT:
+ * Video completion is client-reported. The YouTube player
+ * event improves progression control but is not independent
+ * proof of participant attention.
+ * ============================================================
+ */
 
 'use strict';
 
 const Training = (() => {
+
+  // ==========================================================
+  // TRAINING CONTENT
+  // ==========================================================
 
   const MODULES = [
     {
@@ -65,34 +71,53 @@ const Training = (() => {
     }
   ];
 
+  // ==========================================================
+  // MODULE STATE
+  // ==========================================================
+
   let currentModuleIndex = 0;
   let currentModule = null;
+
   let player = null;
+
   let videoEnded = false;
   let videoCompleted = false;
   let completionRequestSent = false;
+
   let checkpointCompleted = false;
   let checkpointAwaitingNext = false;
+
   let checkpoints = [];
   let currentCheckpointIndex = 0;
+
   let submittingCheckpoint = false;
   let moduleComplete = false;
 
   const completedModules = new Set();
   const awardedModules = new Set();
 
+  // ==========================================================
+  // GENERAL HELPERS
+  // ==========================================================
+
   function $(id) {
     return document.getElementById(id);
   }
 
   function showStatus(message, type = 'info') {
-    if (window.App && typeof App.showMessage === 'function') {
-      App.showMessage(message, type, 'app-message');
+    if (
+      window.App &&
+      typeof window.App.showMessage === 'function'
+    ) {
+      window.App.showMessage(message, type, 'app-message');
+    } else {
+      console.log(message);
     }
   }
 
   function showCheckpointFeedback(message, type = 'info') {
     const target = $('training-checkpoint-feedback');
+
     if (!target) return;
 
     target.textContent = message;
@@ -102,6 +127,7 @@ const Training = (() => {
 
   function clearCheckpointFeedback() {
     const target = $('training-checkpoint-feedback');
+
     if (!target) return;
 
     target.textContent = '';
@@ -110,18 +136,31 @@ const Training = (() => {
 
   function showElement(id) {
     const target = $(id);
-    if (target) target.classList.remove('hidden');
+
+    if (target) {
+      target.classList.remove('hidden');
+    }
   }
 
   function hideElement(id) {
     const target = $(id);
-    if (target) target.classList.add('hidden');
+
+    if (target) {
+      target.classList.add('hidden');
+    }
   }
 
   function setText(id, value) {
     const target = $(id);
-    if (target) target.textContent = value;
+
+    if (target) {
+      target.textContent = value;
+    }
   }
+
+  // ==========================================================
+  // PROGRESS DISPLAY
+  // ==========================================================
 
   function updateModuleProgress() {
     setText(
@@ -130,8 +169,13 @@ const Training = (() => {
     );
   }
 
+  // ==========================================================
+  // VIDEO CONTAINER
+  // ==========================================================
+
   function getVideoContainer() {
     const iframe = $('training-video');
+
     return iframe
       ? iframe.closest('.video-container')
       : document.querySelector('.video-container');
@@ -146,9 +190,16 @@ const Training = (() => {
     }
 
     if (button) {
-      button.classList.toggle('hidden', !visible && !moduleComplete);
+      button.classList.toggle(
+        'hidden',
+        !visible && !moduleComplete
+      );
     }
   }
+
+  // ==========================================================
+  // YOUTUBE IFRAME API
+  // ==========================================================
 
   function loadYouTubeAPI() {
     if (window.YT && window.YT.Player) {
@@ -161,21 +212,31 @@ const Training = (() => {
 
     window.__humanFirewallYouTubePromise = new Promise(
       (resolve, reject) => {
-        const previousCallback = window.onYouTubeIframeAPIReady;
+
+        const previousCallback =
+          window.onYouTubeIframeAPIReady;
 
         window.onYouTubeIframeAPIReady = () => {
+
           if (typeof previousCallback === 'function') {
             try {
               previousCallback();
             } catch (error) {
-              console.warn('Previous YouTube callback failed:', error);
+              console.warn(
+                'Previous YouTube callback failed:',
+                error
+              );
             }
           }
 
           if (window.YT && window.YT.Player) {
             resolve();
           } else {
-            reject(new Error('YouTube player API failed to initialise.'));
+            reject(
+              new Error(
+                'YouTube player API failed to initialise.'
+              )
+            );
           }
         };
 
@@ -185,35 +246,52 @@ const Training = (() => {
 
         if (!script) {
           script = document.createElement('script');
-          script.src = 'https://www.youtube.com/iframe_api';
+
+          script.src =
+            'https://www.youtube.com/iframe_api';
+
           script.async = true;
 
           script.onerror = () => {
-            reject(new Error('Unable to load the YouTube player API.'));
+            reject(
+              new Error(
+                'Unable to load the YouTube player API.'
+              )
+            );
           };
 
           document.head.appendChild(script);
         }
+
       }
     );
 
     return window.__humanFirewallYouTubePromise;
   }
 
+  // ==========================================================
+  // VIDEO PLAYER CREATION
+  // ==========================================================
+
   function createVideoFrame() {
     const container = getVideoContainer();
 
     if (!container) {
-      throw new Error('The training video container is missing.');
+      throw new Error(
+        'The training video container is missing.'
+      );
     }
 
     container.replaceChildren();
 
     const iframe = document.createElement('iframe');
+
     iframe.id = 'training-video';
     iframe.title = 'Cybersecurity training video';
+
     iframe.allow =
       'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+
     iframe.allowFullscreen = true;
     iframe.loading = 'lazy';
 
@@ -223,11 +301,15 @@ const Training = (() => {
   }
 
   async function createPlayer(module) {
+
     if (player && typeof player.destroy === 'function') {
       try {
         player.destroy();
       } catch (error) {
-        console.warn('Unable to destroy previous video player:', error);
+        console.warn(
+          'Unable to destroy previous video player:',
+          error
+        );
       }
     }
 
@@ -238,47 +320,73 @@ const Training = (() => {
     await loadYouTubeAPI();
 
     return new Promise((resolve, reject) => {
+
       try {
-        player = new window.YT.Player('training-video', {
-          width: '100%',
-          height: '390',
-          videoId: module.videoId,
 
-          playerVars: {
-            playsinline: 1,
-            rel: 0,
-            controls: 1
-          },
+        let playerReady = false;
 
-          events: {
-            onReady: () => {
-              resolve();
+        player = new window.YT.Player(
+          'training-video',
+          {
+            width: '100%',
+            height: '390',
+
+            videoId: module.videoId,
+
+            playerVars: {
+              playsinline: 1,
+              rel: 0,
+              controls: 1
             },
 
-            onStateChange: event => {
-              if (
-                event.data === window.YT.PlayerState.ENDED
-              ) {
-                handleVideoEnded();
+            events: {
+
+              onReady: () => {
+                playerReady = true;
+                resolve();
+              },
+
+              onStateChange: event => {
+
+                if (
+                  event.data ===
+                  window.YT.PlayerState.ENDED
+                ) {
+                  handleVideoEnded();
+                }
+
+              },
+
+              onError: event => {
+
+                const message =
+                  `The video could not be played. YouTube error ${event.data}.`;
+
+                showStatus(message, 'error');
+
+                if (!playerReady) {
+                  reject(new Error(message));
+                }
+
               }
-            },
 
-            onError: event => {
-              const message =
-                `The video could not be played. YouTube error ${event.data}.`;
-
-              showStatus(message, 'error');
-              reject(new Error(message));
             }
           }
-        });
+        );
+
       } catch (error) {
         reject(error);
       }
+
     });
   }
 
+  // ==========================================================
+  // VIDEO COMPLETION
+  // ==========================================================
+
   async function handleVideoEnded() {
+
     if (
       !currentModule ||
       videoCompleted ||
@@ -298,6 +406,7 @@ const Training = (() => {
     }
 
     try {
+
       showStatus(
         'Video finished. Recording your training progress...',
         'info'
@@ -312,9 +421,16 @@ const Training = (() => {
         'success'
       );
 
-      await loadCheckpoints();
+      const loaded = await loadCheckpoints();
+
+      if (!loaded && button) {
+        button.disabled = false;
+        button.classList.remove('hidden');
+        button.textContent = 'RETRY CHECKPOINT LOADING';
+      }
 
     } catch (error) {
+
       completionRequestSent = false;
 
       showStatus(
@@ -326,14 +442,25 @@ const Training = (() => {
         button.disabled = false;
         button.textContent = 'RETRY VIDEO COMPLETION';
       }
+
     }
+
   }
 
+  // ==========================================================
+  // CHECKPOINT LOADING
+  // ==========================================================
+
   async function loadCheckpoints() {
-    if (!currentModule || !videoCompleted) return;
+
+    if (!currentModule || !videoCompleted) {
+      return false;
+    }
 
     try {
-      const response = await API.getCheckpoints(currentModule.id);
+
+      const response =
+        await API.getCheckpoints(currentModule.id);
 
       if (
         !response ||
@@ -346,18 +473,36 @@ const Training = (() => {
       }
 
       for (const question of response.questions) {
+
         if (
           typeof question.questionId !== 'string' ||
           typeof question.prompt !== 'string' ||
-          !Array.isArray(question.options)
+          !Array.isArray(question.options) ||
+          question.options.length < 2
         ) {
-          throw new Error('The server returned an invalid checkpoint question.');
+          throw new Error(
+            'The server returned an invalid checkpoint question.'
+          );
         }
+
+        for (const option of question.options) {
+          if (
+            typeof option.id !== 'string' ||
+            typeof option.text !== 'string'
+          ) {
+            throw new Error(
+              'The server returned an invalid checkpoint option.'
+            );
+          }
+        }
+
       }
 
       checkpoints = response.questions;
+
       currentCheckpointIndex = 0;
       checkpointAwaitingNext = false;
+      checkpointCompleted = false;
 
       setVideoVisible(false);
       hideElement('training-complete-button');
@@ -365,50 +510,75 @@ const Training = (() => {
 
       renderCheckpoint();
 
+      return true;
+
     } catch (error) {
+
       showStatus(error.message, 'error');
+
+      return false;
+
     }
+
   }
 
+  // ==========================================================
+  // CHECKPOINT DISPLAY
+  // ==========================================================
+
   function renderCheckpoint() {
+
     if (currentCheckpointIndex >= checkpoints.length) {
       finishModule();
       return;
     }
 
-    const question = checkpoints[currentCheckpointIndex];
+    const question =
+      checkpoints[currentCheckpointIndex];
 
     setText(
       'training-checkpoint-question',
       `CHECKPOINT ${currentCheckpointIndex + 1} OF ${checkpoints.length}: ${question.prompt}`
     );
 
-    const optionsContainer = $('training-checkpoint-options');
+    const optionsContainer =
+      $('training-checkpoint-options');
 
     if (!optionsContainer) {
-      showStatus('The checkpoint options container is missing.', 'error');
+      showStatus(
+        'The checkpoint options container is missing.',
+        'error'
+      );
       return;
     }
 
     optionsContainer.replaceChildren();
 
     question.options.forEach(option => {
+
       const label = document.createElement('label');
+
       label.className = 'option';
 
       const radio = document.createElement('input');
+
       radio.type = 'radio';
       radio.name = 'training-checkpoint-answer';
       radio.value = option.id;
 
       const text = document.createElement('span');
-      text.textContent = `${option.id}. ${option.text}`;
+
+      text.textContent =
+        `${option.id}. ${option.text}`;
 
       label.append(radio, text);
+
       optionsContainer.appendChild(label);
+
     });
 
-    const continueButton = $('training-checkpoint-continue');
+    const continueButton =
+      $('training-checkpoint-continue');
 
     if (continueButton) {
       continueButton.disabled = false;
@@ -417,10 +587,17 @@ const Training = (() => {
     }
 
     checkpointAwaitingNext = false;
+
     clearCheckpointFeedback();
+
   }
 
+  // ==========================================================
+  // CHECKPOINT ANSWER SUBMISSION
+  // ==========================================================
+
   async function submitCheckpoint() {
+
     if (
       submittingCheckpoint ||
       !currentModule ||
@@ -430,7 +607,11 @@ const Training = (() => {
       return;
     }
 
+    // A correct answer has already been recorded.
+    // The participant can now move to the next question.
+
     if (checkpointAwaitingNext) {
+
       currentCheckpointIndex++;
 
       if (currentCheckpointIndex >= checkpoints.length) {
@@ -442,7 +623,8 @@ const Training = (() => {
       return;
     }
 
-    const question = checkpoints[currentCheckpointIndex];
+    const question =
+      checkpoints[currentCheckpointIndex];
 
     if (!question) return;
 
@@ -458,9 +640,22 @@ const Training = (() => {
       return;
     }
 
+    const validOption = question.options.some(
+      option => option.id === selected.value
+    );
+
+    if (!validOption) {
+      showCheckpointFeedback(
+        'Invalid answer selection. Please try again.',
+        'warning'
+      );
+      return;
+    }
+
     submittingCheckpoint = true;
 
-    const button = $('training-checkpoint-continue');
+    const button =
+      $('training-checkpoint-continue');
 
     if (button) {
       button.disabled = true;
@@ -468,13 +663,21 @@ const Training = (() => {
     }
 
     try {
+
       const result = await API.answerCheckpoint(
         currentModule.id,
         question.questionId,
         selected.value
       );
 
+      if (typeof result.correct !== 'boolean') {
+        throw new Error(
+          'The server returned an invalid checkpoint result.'
+        );
+      }
+
       if (result.correct === true) {
+
         checkpointAwaitingNext = true;
 
         showCheckpointFeedback(
@@ -482,12 +685,15 @@ const Training = (() => {
           'success'
         );
 
-        const optionsContainer = $('training-checkpoint-options');
+        const optionsContainer =
+          $('training-checkpoint-options');
 
         if (optionsContainer) {
-          optionsContainer.querySelectorAll('input').forEach(input => {
-            input.disabled = true;
-          });
+          optionsContainer
+            .querySelectorAll('input')
+            .forEach(input => {
+              input.disabled = true;
+            });
         }
 
         if (result.checkpointCompleted === true) {
@@ -496,12 +702,14 @@ const Training = (() => {
 
         if (button) {
           button.disabled = false;
+
           button.textContent = checkpointCompleted
             ? 'COMPLETE MODULE'
             : 'NEXT QUESTION';
         }
 
       } else {
+
         showCheckpointFeedback(
           `Incorrect. ${result.explanation || 'Review the learning material and try again.'}`,
           'error'
@@ -511,10 +719,15 @@ const Training = (() => {
           button.disabled = false;
           button.textContent = 'TRY AGAIN';
         }
+
       }
 
     } catch (error) {
-      showCheckpointFeedback(error.message, 'error');
+
+      showCheckpointFeedback(
+        error.message,
+        'error'
+      );
 
       if (button) {
         button.disabled = false;
@@ -522,36 +735,54 @@ const Training = (() => {
       }
 
     } finally {
+
       submittingCheckpoint = false;
+
     }
+
   }
 
+  // ==========================================================
+  // MODULE COMPLETION
+  // ==========================================================
+
   function finishModule() {
-    if (!currentModule || !checkpointCompleted) return;
+
+    if (!currentModule || !checkpointCompleted) {
+      return;
+    }
+
+    if (moduleComplete) return;
 
     moduleComplete = true;
 
     hideElement('training-checkpoint');
+
     setVideoVisible(false);
 
-    if (!completedModules.has(currentModule.id)) {
-      completedModules.add(currentModule.id);
-    }
+    completedModules.add(currentModule.id);
+
+    // Game XP is separate from assessment scores.
 
     if (
       !awardedModules.has(currentModule.id) &&
       window.App &&
-      typeof App.addGameXP === 'function'
+      typeof window.App.addGameXP === 'function'
     ) {
-      App.addGameXP(100);
+
+      window.App.addGameXP(100);
+
       awardedModules.add(currentModule.id);
+
     }
 
     updateModuleProgress();
 
-    const button = $('training-complete-button');
+    const button =
+      $('training-complete-button');
 
     if (button) {
+
       button.classList.remove('hidden');
       button.disabled = false;
 
@@ -559,16 +790,29 @@ const Training = (() => {
         currentModuleIndex === MODULES.length - 1
           ? 'CONTINUE TO MISSIONS'
           : 'NEXT TRAINING MODULE';
+
     }
 
     showStatus(
       `${currentModule.title} completed. Both checkpoint questions were answered correctly.`,
       'success'
     );
+
   }
 
+  // ==========================================================
+  // OPEN TRAINING MODULE
+  // ==========================================================
+
   async function openModule(index) {
-    if (index < 0 || index >= MODULES.length) return;
+
+    if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= MODULES.length
+    ) {
+      return;
+    }
 
     currentModuleIndex = index;
     currentModule = MODULES[index];
@@ -576,16 +820,23 @@ const Training = (() => {
     videoEnded = false;
     videoCompleted = false;
     completionRequestSent = false;
+
     checkpointCompleted = false;
     checkpointAwaitingNext = false;
+
     moduleComplete = false;
+
     checkpoints = [];
     currentCheckpointIndex = 0;
 
+    submittingCheckpoint = false;
+
     hideElement('training-checkpoint');
+
     setVideoVisible(true);
 
-    const button = $('training-complete-button');
+    const button =
+      $('training-complete-button');
 
     if (button) {
       button.classList.remove('hidden');
@@ -598,14 +849,27 @@ const Training = (() => {
       `MODULE ${index + 1} / ${MODULES.length}`
     );
 
-    setText('training-module-title', currentModule.title);
-    setText('training-module-description', currentModule.description);
-    setText('training-transcript', currentModule.learningPoints);
+    setText(
+      'training-module-title',
+      currentModule.title
+    );
+
+    setText(
+      'training-module-description',
+      currentModule.description
+    );
+
+    setText(
+      'training-transcript',
+      currentModule.learningPoints
+    );
 
     updateModuleProgress();
+
     clearCheckpointFeedback();
 
     try {
+
       showStatus(
         `Loading module ${index + 1} of ${MODULES.length}...`,
         'info'
@@ -619,79 +883,153 @@ const Training = (() => {
       );
 
     } catch (error) {
+
       showStatus(error.message, 'error');
 
       if (button) {
         button.disabled = true;
         button.textContent = 'VIDEO UNAVAILABLE';
       }
+
     }
+
   }
 
+  // ==========================================================
+  // NEXT MODULE
+  // ==========================================================
+
   async function nextModule() {
-    if (moduleComplete !== true || !checkpointCompleted) {
+
+    if (
+      moduleComplete !== true ||
+      !checkpointCompleted
+    ) {
       showStatus(
         'Complete the video and both checkpoint questions before proceeding.',
         'warning'
       );
+
       return;
     }
 
     if (currentModuleIndex < MODULES.length - 1) {
+
       await openModule(currentModuleIndex + 1);
+
       return;
+
     }
 
-    await App.continueToMissions();
+    if (
+      window.App &&
+      typeof window.App.continueToMissions === 'function'
+    ) {
+      await window.App.continueToMissions();
+    }
+
   }
 
+  // ==========================================================
+  // EVENT BINDING
+  // ==========================================================
+
   function bindEvents() {
-    const videoButton = $('training-complete-button');
+
+    const videoButton =
+      $('training-complete-button');
 
     if (
       videoButton &&
       !videoButton.dataset.trainingBound
     ) {
-      videoButton.addEventListener('click', async () => {
-        if (moduleComplete) {
-          await nextModule();
-          return;
-        }
 
-        if (videoEnded && !videoCompleted) {
-          await handleVideoEnded();
-          return;
-        }
+      videoButton.addEventListener(
+        'click',
+        async () => {
 
-        showStatus(
-          'You must watch the complete video before continuing.',
-          'warning'
-        );
-      });
+          if (moduleComplete) {
+            await nextModule();
+            return;
+          }
+
+          // Video finished and completion was recorded,
+          // but checkpoint retrieval previously failed.
+
+          if (videoCompleted && !checkpoints.length) {
+            const loaded = await loadCheckpoints();
+
+            if (!loaded) {
+              videoButton.disabled = false;
+              videoButton.textContent =
+                'RETRY CHECKPOINT LOADING';
+            }
+
+            return;
+          }
+
+          // Video finished but backend recording failed.
+
+          if (videoEnded && !videoCompleted) {
+            await handleVideoEnded();
+            return;
+          }
+
+          showStatus(
+            'You must watch the complete video before continuing.',
+            'warning'
+          );
+
+        }
+      );
 
       videoButton.dataset.trainingBound = 'true';
+
     }
 
-    const checkpointButton = $('training-checkpoint-continue');
+    const checkpointButton =
+      $('training-checkpoint-continue');
 
     if (
       checkpointButton &&
       !checkpointButton.dataset.trainingBound
     ) {
-      checkpointButton.addEventListener('click', submitCheckpoint);
+
+      checkpointButton.addEventListener(
+        'click',
+        submitCheckpoint
+      );
+
       checkpointButton.dataset.trainingBound = 'true';
+
     }
+
   }
+
+  // ==========================================================
+  // INITIALISATION
+  // ==========================================================
 
   async function initialise() {
+
     bindEvents();
+
     await openModule(0);
+
   }
 
+  // ==========================================================
+  // PUBLIC INTERFACE
+  // ==========================================================
+
   return {
+
     initialise,
+
     bindEvents,
+
     openModule,
+
     nextModule,
 
     getModules() {
@@ -700,6 +1038,10 @@ const Training = (() => {
         title: module.title
       }));
     }
+
   };
 
 })();
+
+// Expose the training controller to other frontend modules.
+window.Training = Training;
