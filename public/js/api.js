@@ -1,6 +1,6 @@
 
 // Human Firewall - API communication layer
-// All protected requests use the pseudonymous session token.
+// Protected requests use the pseudonymous session token.
 
 const API = (() => {
   const BASE_URL = '/api/v2';
@@ -50,7 +50,9 @@ const API = (() => {
         cache: 'no-store'
       });
     } catch {
-      throw new Error('Unable to connect to the server. Check your connection and try again.');
+      throw new Error(
+        'Unable to connect to the server. Check your connection and try again.'
+      );
     }
 
     let data;
@@ -66,22 +68,31 @@ const API = (() => {
         clearSession();
       }
 
-      throw new Error(data.error || `Request failed (${response.status}).`);
+      throw new Error(
+        data.error || `Request failed (${response.status}).`
+      );
     }
 
     return data;
   }
 
   function post(url, body, authenticated = true) {
-    return request(url, {
-      method: 'POST',
-      body: JSON.stringify(body)
-    }, authenticated);
+    return request(
+      url,
+      {
+        method: 'POST',
+        body: JSON.stringify(body)
+      },
+      authenticated
+    );
   }
 
   return {
+
     getToken,
+
     getParticipantCode,
+
     clearSession,
 
     async register(consentAccepted) {
@@ -100,7 +111,10 @@ const API = (() => {
     },
 
     startAssessment(type) {
-      return post(`${BASE_URL}/assessments/${encodeURIComponent(type)}/start`, {});
+      return post(
+        `${BASE_URL}/assessments/${encodeURIComponent(type)}/start`,
+        {}
+      );
     },
 
     submitAssessment(type, attemptId, answers) {
@@ -130,6 +144,17 @@ const API = (() => {
       );
     },
 
+    getMissions() {
+      return request(`${BASE_URL}/missions`);
+    },
+
+    submitMission(missionId, decisions) {
+      return post(
+        `${BASE_URL}/missions/${encodeURIComponent(missionId)}/submit`,
+        { decisions }
+      );
+    },
+
     getProgress() {
       return request(`${BASE_URL}/progress`);
     },
@@ -137,5 +162,6 @@ const API = (() => {
     getLeaderboard() {
       return request('/api/leaderboard', {}, false);
     }
+
   };
 })();
