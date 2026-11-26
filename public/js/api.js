@@ -1,17 +1,41 @@
 
-// Human Firewall - API communication layer
-// Protected requests use the pseudonymous session token.
+/*
+ * HUMAN FIREWALL
+ * API communication layer
+ *
+ * Handles communication between the frontend and backend.
+ * Protected requests use the pseudonymous session token.
+ */
+
+'use strict';
 
 const API = (() => {
   const BASE_URL = '/api/v2';
+
   const TOKEN_KEY = 'hf_session_token';
   const CODE_KEY = 'hf_participant_code';
+
+  // =========================================================
+  // SESSION MANAGEMENT
+  // =========================================================
 
   function getToken() {
     return sessionStorage.getItem(TOKEN_KEY);
   }
 
+  function getParticipantCode() {
+    return sessionStorage.getItem(CODE_KEY);
+  }
+
   function saveSession(data) {
+    if (
+      !data ||
+      typeof data.sessionToken !== 'string' ||
+      typeof data.participantCode !== 'string'
+    ) {
+      throw new Error('The server returned incomplete session information.');
+    }
+
     sessionStorage.setItem(TOKEN_KEY, data.sessionToken);
     sessionStorage.setItem(CODE_KEY, data.participantCode);
   }
@@ -21,12 +45,13 @@ const API = (() => {
     sessionStorage.removeItem(CODE_KEY);
   }
 
-  function getParticipantCode() {
-    return sessionStorage.getItem(CODE_KEY);
-  }
+  // =========================================================
+  // HTTP REQUEST HANDLING
+  // =========================================================
 
   async function request(url, options = {}, authenticated = true) {
     const headers = {
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       ...(options.headers || {})
     };
@@ -35,7 +60,9 @@ const API = (() => {
       const token = getToken();
 
       if (!token) {
-        throw new Error('Your session has expired. Please register again.');
+        throw new Error(
+          'Your session has expired. Please register again.'
+        );
       }
 
       headers.Authorization = `Bearer ${token}`;
@@ -60,7 +87,9 @@ const API = (() => {
     try {
       data = await response.json();
     } catch {
-      throw new Error('The server returned an invalid response.');
+      throw new Error(
+        'The server returned an invalid response.'
+      );
     }
 
     if (!response.ok) {
@@ -87,7 +116,15 @@ const API = (() => {
     );
   }
 
+  // =========================================================
+  // PUBLIC API METHODS
+  // =========================================================
+
   return {
+
+    // -------------------------------------------------------
+    // Session
+    // -------------------------------------------------------
 
     getToken,
 
@@ -103,12 +140,17 @@ const API = (() => {
       );
 
       saveSession(data);
+
       return data;
     },
 
     getSession() {
       return request(`${BASE_URL}/session`);
     },
+
+    // -------------------------------------------------------
+    // Assessments
+    // -------------------------------------------------------
 
     startAssessment(type) {
       return post(
@@ -120,9 +162,16 @@ const API = (() => {
     submitAssessment(type, attemptId, answers) {
       return post(
         `${BASE_URL}/assessments/${encodeURIComponent(type)}/submit`,
-        { attemptId, answers }
+        {
+          attemptId,
+          answers
+        }
       );
     },
+
+    // -------------------------------------------------------
+    // Training modules
+    // -------------------------------------------------------
 
     getCheckpoints(moduleId) {
       return request(
@@ -144,6 +193,10 @@ const API = (() => {
       );
     },
 
+    // -------------------------------------------------------
+    // Interactive missions
+    // -------------------------------------------------------
+
     getMissions() {
       return request(`${BASE_URL}/missions`);
     },
@@ -155,13 +208,29 @@ const API = (() => {
       );
     },
 
+    // -------------------------------------------------------
+    // Participant progress
+    // -------------------------------------------------------
+
     getProgress() {
       return request(`${BASE_URL}/progress`);
     },
 
+    // -------------------------------------------------------
+    // Leaderboard
+    // -------------------------------------------------------
+
     getLeaderboard() {
-      return request('/api/leaderboard', {}, false);
+      return request(
+        '/api/leaderboard',
+        {},
+        false
+      );
     }
 
   };
+
 })();
+
+// Make the API available to other frontend modules.
+window.API = API;
