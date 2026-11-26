@@ -174,10 +174,12 @@ const Training = (() => {
   // ==========================================================
 
   function getVideoContainer() {
-    const iframe = $('training-video');
+    const existingPlayer =
+      $('training-video-player') ||
+      $('training-video');
 
-    return iframe
-      ? iframe.closest('.video-container')
+    return existingPlayer
+      ? existingPlayer.closest('.video-container')
       : document.querySelector('.video-container');
   }
 
@@ -202,6 +204,7 @@ const Training = (() => {
   // ==========================================================
 
   function loadYouTubeAPI() {
+
     if (window.YT && window.YT.Player) {
       return Promise.resolve();
     }
@@ -216,9 +219,54 @@ const Training = (() => {
         const previousCallback =
           window.onYouTubeIframeAPIReady;
 
+        let settled = false;
+
+        const timeout = window.setTimeout(() => {
+
+          if (settled) return;
+
+          settled = true;
+
+          reject(
+            new Error(
+              'YouTube player API timed out. Please refresh the page and try again.'
+            )
+          );
+
+        }, 20000);
+
+        function finishSuccessfully() {
+
+          if (settled) return;
+
+          if (!window.YT || !window.YT.Player) {
+            return;
+          }
+
+          settled = true;
+
+          window.clearTimeout(timeout);
+
+          resolve();
+
+        }
+
+        function finishWithError(error) {
+
+          if (settled) return;
+
+          settled = true;
+
+          window.clearTimeout(timeout);
+
+          reject(error);
+
+        }
+
         window.onYouTubeIframeAPIReady = () => {
 
           if (typeof previousCallback === 'function') {
+
             try {
               previousCallback();
             } catch (error) {
@@ -227,17 +275,11 @@ const Training = (() => {
                 error
               );
             }
+
           }
 
-          if (window.YT && window.YT.Player) {
-            resolve();
-          } else {
-            reject(
-              new Error(
-                'YouTube player API failed to initialise.'
-              )
-            );
-          }
+          finishSuccessfully();
+
         };
 
         let script = document.querySelector(
@@ -245,6 +287,7 @@ const Training = (() => {
         );
 
         if (!script) {
+
           script = document.createElement('script');
 
           script.src =
@@ -253,27 +296,39 @@ const Training = (() => {
           script.async = true;
 
           script.onerror = () => {
-            reject(
+
+            finishWithError(
               new Error(
-                'Unable to load the YouTube player API.'
+                'Unable to load the YouTube player API. Check your network connection or browser restrictions.'
               )
             );
+
           };
 
           document.head.appendChild(script);
+
+        } else {
+
+          // Handle the case where the API became available
+          // while another part of the application loaded it.
+
+          finishSuccessfully();
+
         }
 
       }
     );
 
     return window.__humanFirewallYouTubePromise;
+
   }
 
   // ==========================================================
-  // VIDEO PLAYER CREATION
+  // VIDEO PLAYER PLACEHOLDER
   // ==========================================================
 
   function createVideoFrame() {
+
     const container = getVideoContainer();
 
     if (!container) {
@@ -282,27 +337,38 @@ const Training = (() => {
       );
     }
 
+    // Remove the previous player completely.
+    // The YouTube API will create and manage its own iframe.
+
     container.replaceChildren();
 
-    const iframe = document.createElement('iframe');
+    // IMPORTANT:
+    // YT.Player must receive a DIV placeholder here.
+    // Do not create an iframe manually and then ask the
+    // YouTube API to initialise another player inside it.
 
-    iframe.id = 'training-video';
-    iframe.title = 'Cybersecurity training video';
+    const placeholder = document.createElement('div');
 
-    iframe.allow =
-      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    placeholder.id = 'training-video-player';
+    placeholder.className = 'training-video-player';
 
-    iframe.allowFullscreen = true;
-    iframe.loading = 'lazy';
+    placeholder.style.width = '100%';
+    placeholder.style.minHeight = '390px';
 
-    container.appendChild(iframe);
+    container.appendChild(placeholder);
 
-    return iframe;
+    return placeholder;
+
   }
+
+  // ==========================================================
+  // VIDEO PLAYER CREATION
+  // ==========================================================
 
   async function createPlayer(module) {
 
     if (player && typeof player.destroy === 'function') {
+
       try {
         player.destroy();
       } catch (error) {
@@ -311,22 +377,62 @@ const Training = (() => {
           error
         );
       }
+
     }
 
     player = null;
 
-    createVideoFrame();
+    const placeholder = createVideoFrame();
 
     await loadYouTubeAPI();
 
     return new Promise((resolve, reject) => {
 
+      let playerReady = false;
+      let settled = false;
+
+      const timeout = window.setTimeout(() => {
+
+        if (settled) return;
+
+        settled = true;
+
+        reject(
+          new Error(
+            'The video player did not initialise. Please refresh the page and try again.'
+          )
+        );
+
+      }, 20000);
+
+      function resolvePlayer() {
+
+        if (settled) return;
+
+        settled = true;
+
+        window.clearTimeout(timeout);
+
+        resolve();
+
+      }
+
+      function rejectPlayer(error) {
+
+        if (settled) return;
+
+        settled = true;
+
+        window.clearTimeout(timeout);
+
+        reject(error);
+
+      }
+
       try {
 
-        let playerReady = false;
-
         player = new window.YT.Player(
-          'training-video',
+          placeholder,
           {
             width: '100%',
             height: '390',
@@ -336,14 +442,40 @@ const Training = (() => {
             playerVars: {
               playsinline: 1,
               rel: 0,
-              controls: 1
+              controls: 1,
+              enablejsapi: 1,
+              origin: window.location.origin
             },
 
             events: {
 
-              onReady: () => {
+              onReady: event => {
+
                 playerReady = true;
-                resolve();
+
+                // Ensure the generated iframe has the
+                // permissions required for YouTube playback.
+
+                const iframe = event.target.getIframe();
+
+                if (iframe) {
+
+                  iframe.title =
+                    `${module.title} training video`;
+
+                  iframe.allow =
+                    'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+
+                  iframe.allowFullscreen = true;
+
+                  iframe.style.width = '100%';
+                  iframe.style.height = '390px';
+                  iframe.style.border = '0';
+
+                }
+
+                resolvePlayer();
+
               },
 
               onStateChange: event => {
@@ -359,26 +491,43 @@ const Training = (() => {
 
               onError: event => {
 
+                const errorMessages = {
+                  2: 'The video ID is invalid.',
+                  5: 'The video cannot be played in the HTML5 player.',
+                  100: 'The video was not found or is unavailable.',
+                  101: 'The video owner does not allow embedded playback.',
+                  150: 'The video owner does not allow embedded playback.',
+                  153: 'YouTube could not verify the request origin or HTTP referrer.'
+                };
+
+                const detail =
+                  errorMessages[event.data] ||
+                  'An unexpected YouTube playback error occurred.';
+
                 const message =
-                  `The video could not be played. YouTube error ${event.data}.`;
+                  `Unable to play ${module.title}. ${detail} (YouTube error ${event.data}).`;
 
                 showStatus(message, 'error');
 
                 if (!playerReady) {
-                  reject(new Error(message));
+                  rejectPlayer(new Error(message));
                 }
 
               }
 
             }
+
           }
         );
 
       } catch (error) {
-        reject(error);
+
+        rejectPlayer(error);
+
       }
 
     });
+
   }
 
   // ==========================================================
@@ -486,6 +635,7 @@ const Training = (() => {
         }
 
         for (const option of question.options) {
+
           if (
             typeof option.id !== 'string' ||
             typeof option.text !== 'string'
@@ -494,6 +644,7 @@ const Training = (() => {
               'The server returned an invalid checkpoint option.'
             );
           }
+
         }
 
       }
@@ -505,7 +656,9 @@ const Training = (() => {
       checkpointCompleted = false;
 
       setVideoVisible(false);
+
       hideElement('training-complete-button');
+
       showElement('training-checkpoint');
 
       renderCheckpoint();
@@ -545,11 +698,14 @@ const Training = (() => {
       $('training-checkpoint-options');
 
     if (!optionsContainer) {
+
       showStatus(
         'The checkpoint options container is missing.',
         'error'
       );
+
       return;
+
     }
 
     optionsContainer.replaceChildren();
@@ -633,11 +789,14 @@ const Training = (() => {
     );
 
     if (!selected) {
+
       showCheckpointFeedback(
         'Select an answer before continuing.',
         'warning'
       );
+
       return;
+
     }
 
     const validOption = question.options.some(
@@ -645,11 +804,14 @@ const Training = (() => {
     );
 
     if (!validOption) {
+
       showCheckpointFeedback(
         'Invalid answer selection. Please try again.',
         'warning'
       );
+
       return;
+
     }
 
     submittingCheckpoint = true;
@@ -689,11 +851,13 @@ const Training = (() => {
           $('training-checkpoint-options');
 
         if (optionsContainer) {
+
           optionsContainer
             .querySelectorAll('input')
             .forEach(input => {
               input.disabled = true;
             });
+
         }
 
         if (result.checkpointCompleted === true) {
@@ -701,11 +865,13 @@ const Training = (() => {
         }
 
         if (button) {
+
           button.disabled = false;
 
           button.textContent = checkpointCompleted
             ? 'COMPLETE MODULE'
             : 'NEXT QUESTION';
+
         }
 
       } else {
@@ -905,12 +1071,14 @@ const Training = (() => {
       moduleComplete !== true ||
       !checkpointCompleted
     ) {
+
       showStatus(
         'Complete the video and both checkpoint questions before proceeding.',
         'warning'
       );
 
       return;
+
     }
 
     if (currentModuleIndex < MODULES.length - 1) {
@@ -957,6 +1125,7 @@ const Training = (() => {
           // but checkpoint retrieval previously failed.
 
           if (videoCompleted && !checkpoints.length) {
+
             const loaded = await loadCheckpoints();
 
             if (!loaded) {
@@ -966,6 +1135,7 @@ const Training = (() => {
             }
 
             return;
+
           }
 
           // Video finished but backend recording failed.
