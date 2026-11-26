@@ -483,15 +483,18 @@
 
   </div>
 
-  <!-- Only files that currently exist -->
+  <!-- APPLICATION MODULES -->
 
   <script src="/js/api.js"></script>
   <script src="/js/assessments.js"></script>
   <script src="/js/training.js"></script>
+  <script src="/js/missions.js"></script>
+  <script src="/js/results.js"></script>
   <script src="/js/app.js"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+
       if (typeof Assessments !== 'undefined') {
         Assessments.bindEvents();
       }
@@ -504,8 +507,11 @@
       const mainLogout = document.getElementById('logout-button');
 
       if (resultsLogout && mainLogout) {
-        resultsLogout.addEventListener('click', () => mainLogout.click());
+        resultsLogout.addEventListener('click', () => {
+          mainLogout.click();
+        });
       }
+
     });
   </script>
 
