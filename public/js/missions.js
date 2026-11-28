@@ -317,7 +317,14 @@ const Missions = (() => {
       );
 
       button.type = 'button';
-      button.disabled = completed || state.loading;
+
+      // FIX:
+      // Do not disable mission buttons because the initial
+      // loading flag is still true during overview rendering.
+      // The loading flag is reset in initialise()'s finally
+      // block before the user can interact with the page.
+
+      button.disabled = completed;
 
       button.addEventListener('click', () => {
         openMission(id);
